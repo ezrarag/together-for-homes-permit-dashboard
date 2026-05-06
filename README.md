@@ -46,6 +46,39 @@ are rendered server-side; later table pages and filtered exports load through
 require a future major Next upgrade. This project is pinned to `next@14.2.35`,
 the latest 14.x patch used for the MVP.
 
+## Embedding on the Together For Homes Site
+
+The dashboard has a dedicated embed route at `/embed/permit-dashboard` that
+strips the full-page chrome and fits cleanly inside an `<iframe>`:
+
+```html
+<iframe
+  src="https://YOUR_DOMAIN/embed/permit-dashboard"
+  width="100%"
+  height="700"
+  style="border:none;border-radius:8px;overflow:hidden"
+  title="Milwaukee Permit Dashboard – Together For Homes"
+  loading="lazy"
+  allowfullscreen
+></iframe>
+```
+
+Replace `YOUR_DOMAIN` with the deployed URL (e.g. `permits.togetherforhomes.org`).
+
+### Locking the `frame-ancestors` CSP before go-live
+
+The embed route currently allows any origin to frame it
+(`Content-Security-Policy: frame-ancestors *`). Before the Together For Homes
+site goes live, set the `EMBED_FRAME_ANCESTORS` environment variable on your
+deployment platform to restrict framing to the TFH domain only:
+
+```
+EMBED_FRAME_ANCESTORS=https://togetherforhomes.org https://www.togetherforhomes.org
+```
+
+All other routes already send `X-Frame-Options: SAMEORIGIN` to prevent
+clickjacking on the standalone dashboard.
+
 ## Deploy
 
 The project includes `vercel.json` for Next.js deployment.
