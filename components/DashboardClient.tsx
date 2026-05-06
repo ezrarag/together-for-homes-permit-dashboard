@@ -3,7 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DataStatusBanner from "@/components/DataStatus";
-import FilterSidebar from "@/components/FilterSidebar";
+import ReportSlicers from "@/components/ReportSlicers";
 import StatBar from "@/components/StatBar";
 import { PERMIT_PAGE_SIZE } from "@/lib/permit-config";
 import type {
@@ -13,11 +13,14 @@ import type {
   PermitSummary,
 } from "@/lib/types";
 
-const PermitMap = dynamic(() => import("@/components/PermitMap"), {
+// Chart panel — loaded client-side only (recharts requires browser APIs)
+const ReportCharts = dynamic(() => import("@/components/ReportCharts"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[200px] items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-400 shadow-sm">
-      Loading map…
+    <div className="grid animate-pulse gap-5 lg:grid-cols-2">
+      {Array.from({ length: 4 }).map((_, i) => (
+        <div key={i} className="h-64 rounded-xl bg-gray-100" />
+      ))}
     </div>
   ),
 });
@@ -105,7 +108,6 @@ export default function DashboardClient({
     [],
   );
 
-  // Reset to page 1 and fetch when filters change
   useEffect(() => {
     if (!isFiltered && page === 1) return;
     fetchPage(filters, 1);
@@ -116,10 +118,6 @@ export default function DashboardClient({
     const target = Math.max(1, Math.min(pageCount, next));
     setPage(target);
     fetchPage(filters, target);
-  }
-
-  function handleFiltersChange(next: PermitFilters) {
-    setFilters(next);
   }
 
   return (
@@ -149,41 +147,49 @@ export default function DashboardClient({
         </div>
       </div>
 
-      {/* ── White content panel — floats over gold band ── */}
+      {/* ── White report panel ── */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="-mt-8 min-h-[80vh] rounded-t-[28px] bg-white px-4 py-6 shadow-xl sm:px-6">
           <div className="flex flex-col gap-5">
+            {/* Data provenance */}
             <DataStatusBanner status={initialDataStatus} />
 
+            {/* KPI row */}
             <StatBar summary={summary} />
 
-            <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
-              <FilterSidebar
-                filters={filters}
-                onChange={handleFiltersChange}
-                statusOptions={summary.statusOptions}
+            {/* ── Horizontal slicer bar (Power BI style) ── */}
+            <ReportSlicers
+              filters={filters}
+              onChange={setFilters}
+              statusOptions={summary.statusOptions}
+            />
+
+            {/* ── 2×2 chart grid ── */}
+            <ReportCharts summary={summary} />
+
+            {/* ── Detail table (responds to filters) ── */}
+            <section>
+              <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-tfh-navy">
+                Permit Records
+                {isFiltered && (
+                  <span className="ml-2 font-normal normal-case tracking-normal text-gray-400">
+                    — filtered view
+                  </span>
+                )}
+              </h2>
+              <PermitTable
+                permits={permits}
+                loading={loading}
+                page={page}
+                pageCount={pageCount}
+                total={total}
+                selectedPermit={selectedPermit}
+                onSelectPermit={setSelectedPermit}
+                onPageChange={handlePageChange}
+                onClearFilters={() => setFilters({})}
+                currentFilters={filters}
               />
-              <section className="flex flex-col gap-5">
-                <PermitMap
-                  permits={permits}
-                  loading={loading}
-                  selectedPermit={selectedPermit}
-                  onSelectPermit={setSelectedPermit}
-                />
-                <PermitTable
-                  permits={permits}
-                  loading={loading}
-                  page={page}
-                  pageCount={pageCount}
-                  total={total}
-                  selectedPermit={selectedPermit}
-                  onSelectPermit={setSelectedPermit}
-                  onPageChange={handlePageChange}
-                  onClearFilters={() => handleFiltersChange({})}
-                  currentFilters={filters}
-                />
-              </section>
-            </div>
+            </section>
           </div>
         </div>
       </div>

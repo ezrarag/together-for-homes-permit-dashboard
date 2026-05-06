@@ -13,6 +13,17 @@ import type {
   PermitSummary,
 } from "@/lib/types";
 
+// Compact 2-chart panel — loaded client-side only
+const EmbedCharts = dynamic(() => import("@/components/EmbedCharts"), {
+  ssr: false,
+  loading: () => (
+    <div className="grid animate-pulse gap-3 sm:grid-cols-2">
+      <div className="h-48 rounded-xl bg-gray-100" />
+      <div className="h-48 rounded-xl bg-gray-100" />
+    </div>
+  ),
+});
+
 const PermitTable = dynamic(() => import("@/components/PermitTable"), {
   loading: () => (
     <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
@@ -128,8 +139,11 @@ export default function EmbedClient({
         </span>
       </header>
 
-      {/* Summary stats — compact 4-stat layout for embed widths */}
+      {/* KPI row — compact 4-stat layout */}
       <StatBar summary={summary} compact />
+
+      {/* Compact 2-chart row */}
+      <EmbedCharts summary={summary} />
 
       {/* Inline filters */}
       <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
@@ -140,7 +154,7 @@ export default function EmbedClient({
         />
       </div>
 
-      {/* Table — full width, no map */}
+      {/* Permit table */}
       <PermitTable
         permits={permits}
         loading={loading}

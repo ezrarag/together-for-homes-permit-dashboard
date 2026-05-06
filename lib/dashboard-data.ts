@@ -19,6 +19,10 @@ const EMPTY_SUMMARY: PermitSummary = {
   totalConstructionValue: 0,
   averageValue: 0,
   statusOptions: [],
+  permitsByType: [],
+  permitsByUse: [],
+  dwellingImpact: { maintain: 0, added: 0, lost: 0 },
+  monthlyTrend: [],
 };
 
 const ERROR_STATUS = (message: string): DataStatus => ({
