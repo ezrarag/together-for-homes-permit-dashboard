@@ -26,9 +26,9 @@ export default function PermitCard({ permit, selected, onClick }: PermitCardProp
       <div className="flex items-start justify-between gap-3">
         <div>
           <h3 className="font-semibold text-white">{permit.address}</h3>
-          <p className="text-sm text-zinc-400">
-            {permit.neighborhood} / {permit.zipCode}
-          </p>
+          {permit.useOfBuilding ? (
+            <p className="text-sm text-zinc-400">{permit.useOfBuilding}</p>
+          ) : null}
         </div>
         <span
           className={`rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${statusClassName[permit.status]}`}
@@ -36,7 +36,11 @@ export default function PermitCard({ permit, selected, onClick }: PermitCardProp
           {permit.status}
         </span>
       </div>
-      <p className="mt-3 text-sm text-zinc-400">{permit.description}</p>
+      {permit.dwellingUnitsImpact !== undefined ? (
+        <p className="mt-3 text-sm text-zinc-400">
+          Dwelling units: {permit.dwellingUnitsImpact}
+        </p>
+      ) : null}
     </article>
   );
 }

@@ -12,18 +12,18 @@ export type PermitType =
 export interface Permit {
   id: string;
   address: string;
-  neighborhood: string;
-  zipCode: string;
+  neighborhood?: string;
+  zipCode?: string;
   permitType: PermitType;
   status: PermitStatus;
+  openedDate?: string;
   issuedDate: string;
   expirationDate?: string;
-  contractor?: string;
-  owner?: string;
-  description?: string;
   value?: number;
-  lat: number;
-  lng: number;
+  useOfBuilding?: string;
+  dwellingUnitsImpact?: number;
+  lat?: number;
+  lng?: number;
 }
 
 export interface PermitFilters {
@@ -34,4 +34,12 @@ export interface PermitFilters {
   dateFrom?: string;
   dateTo?: string;
   search?: string;
+}
+
+export interface DataStatus {
+  source: string;
+  resourceId: string;
+  lastFetched: string;
+  totalRecords: number;
+  error?: string;
 }

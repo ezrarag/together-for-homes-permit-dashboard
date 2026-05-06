@@ -11,8 +11,7 @@ type SortKey =
   | "status"
   | "issuedDate"
   | "value"
-  | "neighborhood"
-  | "zipCode";
+  | "useOfBuilding";
 
 interface PermitTableProps {
   permits: Permit[];
@@ -30,8 +29,7 @@ const columns: Array<{ label: string; key: SortKey; align?: "right" }> = [
   { label: "Status", key: "status" },
   { label: "Issued Date", key: "issuedDate" },
   { label: "Value", key: "value", align: "right" },
-  { label: "Neighborhood", key: "neighborhood" },
-  { label: "ZIP", key: "zipCode" },
+  { label: "Use of Building", key: "useOfBuilding" },
 ];
 
 const statusClassName = {
@@ -103,16 +101,11 @@ export default function PermitTable({
         address: permit.address,
         type: permit.permitType,
         status: permit.status,
+        openedDate: permit.openedDate ?? "",
         issuedDate: permit.issuedDate,
-        expirationDate: permit.expirationDate ?? "",
         value: permit.value ?? "",
-        neighborhood: permit.neighborhood,
-        zipCode: permit.zipCode,
-        contractor: permit.contractor ?? "",
-        owner: permit.owner ?? "",
-        description: permit.description ?? "",
-        latitude: permit.lat,
-        longitude: permit.lng,
+        useOfBuilding: permit.useOfBuilding ?? "",
+        dwellingUnitsImpact: permit.dwellingUnitsImpact ?? "",
       })),
     );
     const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
@@ -207,13 +200,12 @@ export default function PermitTable({
                 <td className="px-4 py-3 text-right text-zinc-400">
                   {formatCurrency(permit.value)}
                 </td>
-                <td className="px-4 py-3 text-zinc-400">{permit.neighborhood}</td>
-                <td className="px-4 py-3 text-zinc-400">{permit.zipCode}</td>
+                <td className="px-4 py-3 text-zinc-400">{permit.useOfBuilding || "-"}</td>
               </tr>
             ))}
             {!loading && visiblePermits.length === 0 ? (
               <tr>
-                <td className="px-4 py-8 text-center text-zinc-500" colSpan={7}>
+                <td className="px-4 py-8 text-center text-zinc-500" colSpan={6}>
                   <div className="flex flex-col items-center gap-3">
                     <span>No permits match the active filters.</span>
                     <button

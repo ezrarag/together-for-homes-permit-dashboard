@@ -1,20 +1,33 @@
-import type { Permit, PermitStatus, PermitType } from "@/lib/types";
+import type { DataStatus, Permit, PermitStatus, PermitType } from "@/lib/types";
 
-const DEFAULT_OPEN_DATA_URL =
-  "https://data.milwaukee.gov/resource/4uui-hhe4.json";
+const CKAN_BASE = "https://data.milwaukee.gov/api/3/action/datastore_search";
+const RESOURCE_ID = "828e9630-d7cb-42e4-960e-964eae916397";
+const SOURCE_NAME = "Milwaukee Open Data – Building Permits";
 
-interface SocrataPermitRecord {
-  permit_no?: string;
-  address?: string;
-  permit_type?: string;
-  status?: string;
-  issue_date?: string;
-  expire_date?: string;
-  estimated_value?: string;
-  latitude?: string;
-  longitude?: string;
-  neighborhood?: string;
-  zip?: string;
+interface CkanRecord {
+  _id?: number;
+  "Record ID"?: string;
+  "Address"?: string;
+  "Permit Type"?: string;
+  "Status"?: string;
+  "Date Opened"?: string;
+  "Date Issued"?: string;
+  "Construction Total Cost"?: string | number;
+  "Use of Building"?: string;
+  "Dwelling units impact"?: string | number;
+}
+
+interface CkanResponse {
+  success: boolean;
+  result: {
+    total: number;
+    records: CkanRecord[];
+  };
+}
+
+export interface FetchPermitsResult {
+  permits: Permit[];
+  dataStatus: DataStatus;
 }
 
 function normalizePermitType(value?: string): PermitType {
@@ -42,61 +55,61 @@ function normalizePermitStatus(value?: string): PermitStatus {
 
 function toIsoDate(value?: string): string | undefined {
   if (!value) return undefined;
-
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
-
   return date.toISOString().slice(0, 10);
 }
 
-function toNumber(value?: string): number | undefined {
-  if (!value) return undefined;
-
-  const parsed = Number(value.replace(/[$,]/g, ""));
-  return Number.isFinite(parsed) ? parsed : undefined;
+function toNumber(value?: string | number): number | undefined {
+  if (value === undefined || value === null || value === "") return undefined;
+  const parsed = Number(String(value).replace(/[$,]/g, ""));
+  return Number.isFinite(parsed) && parsed !== 0 ? parsed : undefined;
 }
 
-function normalizeRecord(record: SocrataPermitRecord): Permit | null {
-  const lat = Number(record.latitude);
-  const lng = Number(record.longitude);
-
-  if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
-    return null;
-  }
-
+function normalizeRecord(record: CkanRecord): Permit {
   return {
-    id: record.permit_no?.trim() || crypto.randomUUID(),
-    address: record.address?.trim() || "Address unavailable",
-    neighborhood: record.neighborhood?.trim() || "Unknown",
-    zipCode: record.zip?.trim() || "",
-    permitType: normalizePermitType(record.permit_type),
-    status: normalizePermitStatus(record.status),
-    issuedDate: toIsoDate(record.issue_date) ?? "",
-    expirationDate: toIsoDate(record.expire_date),
-    value: toNumber(record.estimated_value),
-    lat,
-    lng,
+    id: record["Record ID"]?.trim() || String(record._id ?? crypto.randomUUID()),
+    address: record["Address"]?.trim() || "Address unavailable",
+    permitType: normalizePermitType(record["Permit Type"]),
+    status: normalizePermitStatus(record["Status"]),
+    openedDate: toIsoDate(record["Date Opened"]),
+    issuedDate: toIsoDate(record["Date Issued"]) ?? "",
+    value: toNumber(record["Construction Total Cost"]),
+    useOfBuilding: record["Use of Building"]?.trim() || undefined,
+    dwellingUnitsImpact: toNumber(record["Dwelling units impact"]),
   };
 }
 
-export async function fetchMilwaukeePermits(limit = 500): Promise<Permit[]> {
-  const baseUrl =
-    process.env.NEXT_PUBLIC_MILWAUKEE_OPEN_DATA_URL ?? DEFAULT_OPEN_DATA_URL;
-  const url = new URL(baseUrl);
+export async function fetchMilwaukeePermits(limit = 1000): Promise<FetchPermitsResult> {
+  const url = new URL(CKAN_BASE);
+  url.searchParams.set("resource_id", RESOURCE_ID);
+  url.searchParams.set("limit", String(limit));
 
-  url.searchParams.set("$limit", String(limit));
-  url.searchParams.set("$order", "issue_date DESC");
+  const fetchedAt = new Date().toISOString();
 
-  const response = await fetch(url, {
+  const response = await fetch(url.toString(), {
     next: { revalidate: 60 * 60 },
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch Milwaukee permits: ${response.status}`);
+    throw new Error(`CKAN request failed: ${response.status} ${response.statusText}`);
   }
 
-  const records = (await response.json()) as SocrataPermitRecord[];
-  return records
-    .map(normalizeRecord)
-    .filter((permit): permit is Permit => permit !== null);
+  const json = (await response.json()) as CkanResponse;
+
+  if (!json.success) {
+    throw new Error("CKAN API returned success: false");
+  }
+
+  const permits = json.result.records.map(normalizeRecord);
+
+  return {
+    permits,
+    dataStatus: {
+      source: SOURCE_NAME,
+      resourceId: RESOURCE_ID,
+      lastFetched: fetchedAt,
+      totalRecords: json.result.total,
+    },
+  };
 }

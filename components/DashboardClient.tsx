@@ -2,18 +2,18 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useMemo, useState } from "react";
+import DataStatusBanner from "@/components/DataStatus";
 import FilterSidebar from "@/components/FilterSidebar";
 import StatBar from "@/components/StatBar";
-import samplePermits from "@/data/sample-permits.json";
 import { fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
 import { filterPermits } from "@/lib/permits";
-import type { Permit, PermitFilters } from "@/lib/types";
+import type { DataStatus, Permit, PermitFilters } from "@/lib/types";
 
 const PermitMap = dynamic(() => import("@/components/PermitMap"), {
   ssr: false,
   loading: () => (
     <div className="flex h-[300px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm text-zinc-400 md:h-[420px]">
-      Loading map...
+      Loading map…
     </div>
   ),
 });
@@ -35,10 +35,10 @@ const PermitTable = dynamic(() => import("@/components/PermitTable"), {
 });
 
 export default function DashboardClient() {
-  const [permits, setPermits] = useState<Permit[]>(samplePermits as Permit[]);
+  const [permits, setPermits] = useState<Permit[]>([]);
   const [filters, setFilters] = useState<PermitFilters>({});
   const [loading, setLoading] = useState(true);
-  const [usingCachedData, setUsingCachedData] = useState(false);
+  const [dataStatus, setDataStatus] = useState<DataStatus | null>(null);
   const [selectedPermit, setSelectedPermit] = useState<Permit | null>(null);
 
   useEffect(() => {
@@ -46,20 +46,26 @@ export default function DashboardClient() {
 
     async function loadPermits() {
       try {
-        const livePermits = await fetchMilwaukeePermits();
-        if (isMounted && livePermits.length > 0) {
-          setPermits(livePermits);
-          setUsingCachedData(false);
-        }
-      } catch {
+        const { permits: livePermits, dataStatus: status } =
+          await fetchMilwaukeePermits();
         if (isMounted) {
-          setPermits(samplePermits as Permit[]);
-          setUsingCachedData(true);
+          setPermits(livePermits);
+          setDataStatus(status);
+        }
+      } catch (err) {
+        if (isMounted) {
+          const message =
+            err instanceof Error ? err.message : "Unknown error";
+          setDataStatus({
+            source: "Milwaukee Open Data – Building Permits",
+            resourceId: "828e9630-d7cb-42e4-960e-964eae916397",
+            lastFetched: new Date().toISOString(),
+            totalRecords: 0,
+            error: message,
+          });
         }
       } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
+        if (isMounted) setLoading(false);
       }
     }
 
@@ -88,23 +94,19 @@ export default function DashboardClient() {
                 Milwaukee Permit Dashboard
               </h1>
               <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-                Public permit activity across Milwaukee neighborhoods, sourced
-                from city open data with a local sample fallback.
+                Public permit activity across Milwaukee, sourced live from the
+                City of Milwaukee Open Data portal.
               </p>
             </div>
             <div className="text-sm text-zinc-500">
               {loading
-                ? "Refreshing data..."
+                ? "Refreshing data…"
                 : `${filtered.length.toLocaleString()} shown`}
             </div>
           </div>
         </header>
 
-        {usingCachedData ? (
-          <div className="rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
-            Using cached data
-          </div>
-        ) : null}
+        <DataStatusBanner status={dataStatus} loading={loading} />
 
         <StatBar permits={filtered} />
 

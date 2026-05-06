@@ -1,15 +1,4 @@
-import samplePermits from "@/data/sample-permits.json";
-import { fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
 import type { Permit, PermitFilters } from "@/lib/types";
-
-export async function getPermits(): Promise<Permit[]> {
-  try {
-    const permits = await fetchMilwaukeePermits();
-    return permits.length > 0 ? permits : (samplePermits as Permit[]);
-  } catch {
-    return samplePermits as Permit[];
-  }
-}
 
 export function filterPermits(
   permits: Permit[],
@@ -24,7 +13,7 @@ export function filterPermits(
       return false;
     }
 
-    if (filters.zipCode && !permit.zipCode.includes(filters.zipCode)) {
+    if (filters.zipCode && !(permit.zipCode ?? "").includes(filters.zipCode)) {
       return false;
     }
 
@@ -32,20 +21,18 @@ export function filterPermits(
       return false;
     }
 
-    if (filters.dateFrom && permit.issuedDate < filters.dateFrom) {
+    const dateField = permit.issuedDate || permit.openedDate || "";
+
+    if (filters.dateFrom && dateField < filters.dateFrom) {
       return false;
     }
 
-    if (filters.dateTo && permit.issuedDate > filters.dateTo) {
+    if (filters.dateTo && dateField > filters.dateTo) {
       return false;
     }
 
     if (filters.search) {
-      const haystack = [
-        permit.address,
-        permit.contractor,
-        permit.description,
-      ]
+      const haystack = [permit.address, permit.useOfBuilding]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();
