@@ -11,7 +11,6 @@ activity by type, status, issue date, ZIP code, and location.
 - Tailwind CSS
 - React Leaflet and Leaflet
 - Recharts
-- Firebase package ready for future Firestore integration
 - PapaParse for CSV export
 
 ## Run Locally
@@ -30,23 +29,22 @@ npm run dev
 
 Open `http://localhost:3000/dashboard`.
 
-## Environment Variables
-
-Create `.env.local` from `.env.local.example`.
-
-```bash
-NEXT_PUBLIC_MILWAUKEE_OPEN_DATA_URL=https://data.milwaukee.gov/resource/4uui-hhe4.json
-```
-
 ## Data Source
 
-Permit data is fetched from the City of Milwaukee Open Data Portal through its
-Socrata API endpoint:
+Permit data is fetched server-side from the City of Milwaukee Open Data Portal
+through CKAN:
 
-`https://data.milwaukee.gov/resource/4uui-hhe4.json`
+`https://data.milwaukee.gov/api/3/action/datastore_search?resource_id=828e9630-d7cb-42e4-960e-964eae916397`
 
-If the API request fails, the dashboard falls back to local sample data and
-shows a cached-data banner.
+The dashboard uses a 12-hour revalidation window. The first page and summary
+are rendered server-side; later table pages and filtered exports load through
+`/api/permits`.
+
+## Security Note
+
+`npm audit --omit=dev` currently reports remaining advisories in Next.js 14 that
+require a future major Next upgrade. This project is pinned to `next@14.2.35`,
+the latest 14.x patch used for the MVP.
 
 ## Deploy
 

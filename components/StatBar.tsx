@@ -32,11 +32,11 @@ export default function StatBar({ summary }: { summary: PermitSummary }) {
       value: summary.commercialCount.toLocaleString(),
     },
     {
-      label: "Units Added",
+      label: "Permits Adding Units",
       value: summary.addedGainedUnits.toLocaleString(),
     },
     {
-      label: "Units Lost",
+      label: "Permits Losing Units",
       value: summary.lostEliminatedUnits.toLocaleString(),
     },
     {

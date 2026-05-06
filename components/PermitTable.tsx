@@ -66,7 +66,7 @@ export default function PermitTable({
   async function exportCsv() {
     setCsvLoading(true);
     try {
-      const params = new URLSearchParams({ limit: "5000" });
+      const params = new URLSearchParams({ export: "csv" });
       if (currentFilters.type && currentFilters.type !== "all")
         params.set("type", currentFilters.type);
       if (currentFilters.status) params.set("status", currentFilters.status);
@@ -77,26 +77,7 @@ export default function PermitTable({
 
       const res = await fetch(`/api/permits?${params}`);
       if (!res.ok) throw new Error("Export failed");
-      const { permits: all } = await res.json() as { permits: Permit[] };
-
-      const header = "id,address,zipCode,type,status,rawStatus,openedDate,issuedDate,constructionTotalCost,useOfBuilding,dwellingUnitsImpact\n";
-      const rows = all.map((p) =>
-        [
-          p.id,
-          `"${(p.address ?? "").replace(/"/g, '""')}"`,
-          p.zipCode ?? "",
-          p.permitType,
-          p.status,
-          p.rawStatus ?? "",
-          p.openedDate ?? "",
-          p.issuedDate,
-          p.value ?? "",
-          `"${(p.useOfBuilding ?? "").replace(/"/g, '""')}"`,
-          `"${(p.dwellingUnitsImpact ?? "").replace(/"/g, '""')}"`,
-        ].join(","),
-      );
-      const csv = header + rows.join("\n");
-
+      const csv = await res.text();
       const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");

@@ -1,10 +1,9 @@
 import DashboardClient from "@/components/DashboardClient";
 import { computeSummary, fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
+import { PERMIT_PAGE_SIZE } from "@/lib/permit-config";
 import type { DataStatus, Permit, PermitSummary } from "@/lib/types";
 
 export const revalidate = 60 * 60 * 12;
-
-const INITIAL_PAGE_SIZE = 50;
 
 export default async function DashboardPage() {
   let initialPermits: Permit[] = [];
@@ -16,7 +15,7 @@ export default async function DashboardPage() {
     const { permits: allPermits, dataStatus } = await fetchMilwaukeePermits();
     // Compute summary from full dataset server-side; send only first page to client
     summary = computeSummary(allPermits);
-    initialPermits = allPermits.slice(0, INITIAL_PAGE_SIZE);
+    initialPermits = allPermits.slice(0, PERMIT_PAGE_SIZE);
     initialTotal = allPermits.length;
     initialDataStatus = dataStatus;
   } catch (err) {

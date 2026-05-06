@@ -5,6 +5,7 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import DataStatusBanner from "@/components/DataStatus";
 import FilterSidebar from "@/components/FilterSidebar";
 import StatBar from "@/components/StatBar";
+import { PERMIT_PAGE_SIZE } from "@/lib/permit-config";
 import type {
   DataStatus,
   Permit,
@@ -34,8 +35,6 @@ const PermitTable = dynamic(() => import("@/components/PermitTable"), {
   ),
 });
 
-const PAGE_SIZE = 25;
-
 interface ApiResult {
   permits: Permit[];
   total: number;
@@ -61,7 +60,7 @@ export default function DashboardClient({
   const [permits, setPermits] = useState<Permit[]>(initialPermits);
   const [total, setTotal] = useState(initialTotal);
   const [pageCount, setPageCount] = useState(
-    Math.max(1, Math.ceil(initialTotal / PAGE_SIZE)),
+    Math.max(1, Math.ceil(initialTotal / PERMIT_PAGE_SIZE)),
   );
   const [loading, setLoading] = useState(false);
   const [selectedPermit, setSelectedPermit] = useState<Permit | null>(null);
@@ -78,7 +77,10 @@ export default function DashboardClient({
     async (nextFilters: PermitFilters, nextPage: number) => {
       setLoading(true);
       try {
-        const params = new URLSearchParams({ page: String(nextPage), limit: String(PAGE_SIZE) });
+        const params = new URLSearchParams({
+          page: String(nextPage),
+          limit: String(PERMIT_PAGE_SIZE),
+        });
         if (nextFilters.type && nextFilters.type !== "all")
           params.set("type", nextFilters.type);
         if (nextFilters.status) params.set("status", nextFilters.status);
