@@ -40,41 +40,44 @@ The dashboard uses a 12-hour revalidation window. The first page and summary
 are rendered server-side; later table pages and filtered exports load through
 `/api/permits`.
 
-## Security Note
+## Client Embed Snippet
 
-`npm audit --omit=dev` currently reports remaining advisories in Next.js 14 that
-require a future major Next upgrade. This project is pinned to `next@14.2.35`,
-the latest 14.x patch used for the MVP.
-
-## Embedding on the Together For Homes Site
-
-The dashboard has a dedicated embed route at `/embed/permit-dashboard` that
-strips the full-page chrome and fits cleanly inside an `<iframe>`:
+Drop this `<iframe>` anywhere on the Together For Homes site. Replace
+`YOUR_DOMAIN` with the deployed URL (e.g. `permits.togetherforhomes.org`):
 
 ```html
 <iframe
   src="https://YOUR_DOMAIN/embed/permit-dashboard"
   width="100%"
-  height="700"
-  style="border:none;border-radius:8px;overflow:hidden"
+  height="900"
+  style="border:none;border-radius:8px;overflow:hidden;min-height:720px"
   title="Milwaukee Permit Dashboard – Together For Homes"
   loading="lazy"
   allowfullscreen
 ></iframe>
 ```
 
-Replace `YOUR_DOMAIN` with the deployed URL (e.g. `permits.togetherforhomes.org`).
+The embed route strips the full-page chrome and works at 360 px (mobile),
+768 px (tablet), and 1200 px (desktop) without horizontal scroll. The stat bar
+collapses to a 2 × 2 grid on narrow screens and expands to 4 columns above
+640 px.
 
-### Locking the `frame-ancestors` CSP before go-live
+### Vercel environment variable
 
-The embed route currently allows any origin to frame it
-(`Content-Security-Policy: frame-ancestors *`). Before the Together For Homes
-site goes live, set the `EMBED_FRAME_ANCESTORS` environment variable on your
-deployment platform to restrict framing to the TFH domain only:
+Before deploying to production, set **`EMBED_FRAME_ANCESTORS`** in the Vercel
+dashboard (Project → Settings → Environment Variables):
 
-```
-EMBED_FRAME_ANCESTORS=https://togetherforhomes.org https://www.togetherforhomes.org
-```
+| Variable | Value |
+|---|---|
+| `EMBED_FRAME_ANCESTORS` | `https://togetherforhomes.org https://www.togetherforhomes.org` |
+
+Set it for the **Production** environment only; leave it unset on Preview and
+Development so local iframe testing keeps working.
+
+**What happens if you forget:** in production without this variable the embed
+route defaults to `frame-ancestors 'self'`, which blocks cross-origin framing
+and prints a warning in the Vercel build log. The dashboard itself still works;
+only the `<iframe>` embed is locked out.
 
 All other routes already send `X-Frame-Options: SAMEORIGIN` to prevent
 clickjacking on the standalone dashboard.
@@ -86,3 +89,11 @@ The project includes `vercel.json` for Next.js deployment.
 ```bash
 vercel --prod
 ```
+
+## Known Security Maintenance
+
+`npm audit --omit=dev` reports two remaining advisories in Next.js 14
+(moderate DoS + PostCSS XSS) that require upgrading to Next.js 16 — a breaking
+change deferred post-MVP. The project is pinned to `next@14.2.35`, the latest
+14.x patch. Schedule the Next 16 upgrade as a post-launch task and re-run
+`npm audit` after upgrading.

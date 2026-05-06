@@ -128,8 +128,8 @@ export default function EmbedClient({
         </span>
       </header>
 
-      {/* Summary stats */}
-      <StatBar summary={summary} />
+      {/* Summary stats — compact 4-stat layout for embed widths */}
+      <StatBar summary={summary} compact />
 
       {/* Inline filters */}
       <EmbedFilters
