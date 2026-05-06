@@ -9,15 +9,11 @@ export function filterPermits(
       return false;
     }
 
-    if (filters.status && filters.status !== "all" && permit.status !== filters.status) {
+    if (filters.status && (permit.rawStatus ?? permit.status) !== filters.status) {
       return false;
     }
 
-    if (filters.zipCode && !(permit.zipCode ?? "").includes(filters.zipCode)) {
-      return false;
-    }
-
-    if (filters.neighborhood && permit.neighborhood !== filters.neighborhood) {
+    if (filters.zipCode && (permit.zipCode ?? "") !== filters.zipCode) {
       return false;
     }
 
@@ -32,7 +28,11 @@ export function filterPermits(
     }
 
     if (filters.search) {
-      const haystack = [permit.address, permit.useOfBuilding]
+      const haystack = [
+        permit.address,
+        permit.displayAddress,
+        permit.useOfBuilding,
+      ]
         .filter(Boolean)
         .join(" ")
         .toLowerCase();

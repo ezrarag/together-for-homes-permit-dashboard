@@ -1,18 +1,21 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import DataStatusBanner from "@/components/DataStatus";
 import FilterSidebar from "@/components/FilterSidebar";
 import StatBar from "@/components/StatBar";
-import { fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
-import { filterPermits } from "@/lib/permits";
-import type { DataStatus, Permit, PermitFilters } from "@/lib/types";
+import type {
+  DataStatus,
+  Permit,
+  PermitFilters,
+  PermitSummary,
+} from "@/lib/types";
 
 const PermitMap = dynamic(() => import("@/components/PermitMap"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[300px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm text-zinc-400 md:h-[420px]">
+    <div className="flex h-[200px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm text-zinc-400">
       Loading map…
     </div>
   ),
@@ -23,63 +26,100 @@ const PermitTable = dynamic(() => import("@/components/PermitTable"), {
     <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-4">
       <div className="h-5 w-36 animate-pulse rounded bg-zinc-800" />
       <div className="mt-4 space-y-3">
-        {Array.from({ length: 5 }).map((_, index) => (
-          <div
-            key={index}
-            className="h-10 animate-pulse rounded-md bg-zinc-800/80"
-          />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="h-10 animate-pulse rounded-md bg-zinc-800/80" />
         ))}
       </div>
     </div>
   ),
 });
 
-export default function DashboardClient() {
-  const [permits, setPermits] = useState<Permit[]>([]);
+const PAGE_SIZE = 25;
+
+interface ApiResult {
+  permits: Permit[];
+  total: number;
+  page: number;
+  pageCount: number;
+}
+
+interface DashboardClientProps {
+  initialPermits: Permit[];
+  initialTotal: number;
+  summary: PermitSummary;
+  initialDataStatus: DataStatus;
+}
+
+export default function DashboardClient({
+  initialPermits,
+  initialTotal,
+  summary,
+  initialDataStatus,
+}: DashboardClientProps) {
   const [filters, setFilters] = useState<PermitFilters>({});
-  const [loading, setLoading] = useState(true);
-  const [dataStatus, setDataStatus] = useState<DataStatus | null>(null);
+  const [page, setPage] = useState(1);
+  const [permits, setPermits] = useState<Permit[]>(initialPermits);
+  const [total, setTotal] = useState(initialTotal);
+  const [pageCount, setPageCount] = useState(
+    Math.max(1, Math.ceil(initialTotal / PAGE_SIZE)),
+  );
+  const [loading, setLoading] = useState(false);
   const [selectedPermit, setSelectedPermit] = useState<Permit | null>(null);
 
-  useEffect(() => {
-    let isMounted = true;
-
-    async function loadPermits() {
-      try {
-        const { permits: livePermits, dataStatus: status } =
-          await fetchMilwaukeePermits();
-        if (isMounted) {
-          setPermits(livePermits);
-          setDataStatus(status);
-        }
-      } catch (err) {
-        if (isMounted) {
-          const message =
-            err instanceof Error ? err.message : "Unknown error";
-          setDataStatus({
-            source: "Milwaukee Open Data – Building Permits",
-            resourceId: "828e9630-d7cb-42e4-960e-964eae916397",
-            lastFetched: new Date().toISOString(),
-            totalRecords: 0,
-            error: message,
-          });
-        }
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-
-    loadPermits();
-
-    return () => {
-      isMounted = false;
-    };
-  }, []);
-
-  const filtered = useMemo(
-    () => filterPermits(permits, filters),
-    [permits, filters],
+  const isFiltered = useMemo(
+    () =>
+      Object.values(filters).some(
+        (v) => v !== undefined && v !== "" && v !== "all",
+      ),
+    [filters],
   );
+
+  const fetchPage = useCallback(
+    async (nextFilters: PermitFilters, nextPage: number) => {
+      setLoading(true);
+      try {
+        const params = new URLSearchParams({ page: String(nextPage), limit: String(PAGE_SIZE) });
+        if (nextFilters.type && nextFilters.type !== "all")
+          params.set("type", nextFilters.type);
+        if (nextFilters.status) params.set("status", nextFilters.status);
+        if (nextFilters.zipCode) params.set("zipCode", nextFilters.zipCode);
+        if (nextFilters.dateFrom) params.set("dateFrom", nextFilters.dateFrom);
+        if (nextFilters.dateTo) params.set("dateTo", nextFilters.dateTo);
+        if (nextFilters.search) params.set("search", nextFilters.search);
+
+        const res = await fetch(`/api/permits?${params}`);
+        if (!res.ok) throw new Error(`API error ${res.status}`);
+        const data: ApiResult = await res.json();
+        setPermits(data.permits);
+        setTotal(data.total);
+        setPageCount(data.pageCount);
+        setPage(data.page);
+      } catch {
+        // keep previous results on error
+      } finally {
+        setLoading(false);
+      }
+    },
+    [],
+  );
+
+  // Reset to page 1 and fetch when filters change
+  useEffect(() => {
+    // On mount with no filters, initial server data is already set — skip first fetch
+    if (!isFiltered && page === 1) return;
+    fetchPage(filters, 1);
+    setPage(1);
+  }, [filters]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handlePageChange(next: number) {
+    const target = Math.max(1, Math.min(pageCount, next));
+    setPage(target);
+    fetchPage(filters, target);
+  }
+
+  function handleFiltersChange(next: PermitFilters) {
+    setFilters(next);
+  }
 
   return (
     <main className="min-h-screen bg-zinc-950 text-zinc-100">
@@ -100,31 +140,39 @@ export default function DashboardClient() {
             </div>
             <div className="text-sm text-zinc-500">
               {loading
-                ? "Refreshing data…"
-                : `${filtered.length.toLocaleString()} shown`}
+                ? "Loading…"
+                : `${total.toLocaleString()} ${isFiltered ? "matching" : "total"} permits`}
             </div>
           </div>
         </header>
 
-        <DataStatusBanner status={dataStatus} loading={loading} />
+        <DataStatusBanner status={initialDataStatus} />
 
-        <StatBar permits={filtered} />
+        <StatBar summary={summary} />
 
         <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
-          <FilterSidebar filters={filters} onChange={setFilters} />
+          <FilterSidebar
+            filters={filters}
+            onChange={handleFiltersChange}
+            statusOptions={summary.statusOptions}
+          />
           <section className="flex flex-col gap-5">
             <PermitMap
-              permits={filtered}
-              loading={loading}
+              permits={permits}
               selectedPermit={selectedPermit}
               onSelectPermit={setSelectedPermit}
             />
             <PermitTable
-              permits={filtered}
+              permits={permits}
               loading={loading}
+              page={page}
+              pageCount={pageCount}
+              total={total}
               selectedPermit={selectedPermit}
               onSelectPermit={setSelectedPermit}
-              onClearFilters={() => setFilters({})}
+              onPageChange={handlePageChange}
+              onClearFilters={() => handleFiltersChange({})}
+              currentFilters={filters}
             />
           </section>
         </div>

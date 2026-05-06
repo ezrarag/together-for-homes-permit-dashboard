@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type ChangeEvent } from "react";
-import type { PermitFilters, PermitStatus, PermitType } from "@/lib/types";
+import type { PermitFilters, PermitType } from "@/lib/types";
 
 const permitTypeOptions: Array<{ label: string; value: PermitType | "all" }> = [
   { label: "All", value: "all" },
@@ -14,20 +14,17 @@ const permitTypeOptions: Array<{ label: string; value: PermitType | "all" }> = [
   { label: "Other", value: "other" },
 ];
 
-const statusOptions: Array<{ label: string; value: PermitStatus | "all" }> = [
-  { label: "All", value: "all" },
-  { label: "Open", value: "open" },
-  { label: "Closed", value: "closed" },
-  { label: "Expired", value: "expired" },
-  { label: "Pending", value: "pending" },
-];
-
 interface FilterSidebarProps {
   filters: PermitFilters;
   onChange: (filters: PermitFilters) => void;
+  statusOptions: string[];
 }
 
-export default function FilterSidebar({ filters, onChange }: FilterSidebarProps) {
+export default function FilterSidebar({
+  filters,
+  onChange,
+  statusOptions,
+}: FilterSidebarProps) {
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   function updateFilter(
@@ -65,7 +62,7 @@ export default function FilterSidebar({ filters, onChange }: FilterSidebarProps)
             value={filters.search ?? ""}
             onChange={updateFilter}
             className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-green-500"
-            placeholder="Address, contractor, description"
+            placeholder="Address, use of building"
           />
         </label>
 
@@ -89,13 +86,14 @@ export default function FilterSidebar({ filters, onChange }: FilterSidebarProps)
           <span className="font-medium text-zinc-300">Status</span>
           <select
             name="status"
-            value={filters.status ?? "all"}
+            value={filters.status ?? ""}
             onChange={updateFilter}
             className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none focus:border-green-500"
           >
+            <option value="">All</option>
             {statusOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
+              <option key={option} value={option}>
+                {option}
               </option>
             ))}
           </select>
@@ -109,6 +107,8 @@ export default function FilterSidebar({ filters, onChange }: FilterSidebarProps)
             onChange={updateFilter}
             className="mt-1 w-full rounded-md border border-zinc-700 bg-zinc-950 px-3 py-2 text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-green-500"
             placeholder="53204"
+            inputMode="numeric"
+            maxLength={5}
           />
         </label>
 

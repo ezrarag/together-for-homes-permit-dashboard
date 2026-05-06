@@ -1,52 +1,62 @@
 "use client";
 
-import { useMemo } from "react";
-import type { Permit } from "@/lib/types";
+import type { PermitSummary } from "@/lib/types";
 
-export default function StatBar({ permits }: { permits: Permit[] }) {
-  const stats = useMemo(() => {
-    const openCount = permits.filter((permit) => permit.status === "open").length;
-    const closedCount = permits.filter(
-      (permit) => permit.status === "closed",
-    ).length;
-    const riskCount = permits.filter((permit) =>
-      ["expired", "pending"].includes(permit.status),
-    ).length;
-    const totalValue = permits.reduce(
-      (sum, permit) => sum + (permit.value ?? 0),
-      0,
-    );
-    const valuedPermits = permits.filter(
-      (permit) => typeof permit.value === "number",
-    );
-    const averageValue =
-      valuedPermits.length > 0 ? totalValue / valuedPermits.length : 0;
+function formatCurrency(value: number) {
+  if (value >= 1_000_000) {
+    return `$${(value / 1_000_000).toLocaleString("en-US", { maximumFractionDigits: 1 })}M`;
+  }
+  return value.toLocaleString("en-US", {
+    style: "currency",
+    currency: "USD",
+    maximumFractionDigits: 0,
+  });
+}
 
-    return [
-      { label: "Total Permits", value: permits.length.toLocaleString() },
-      { label: "Open", value: openCount.toLocaleString() },
-      { label: "Closed", value: closedCount.toLocaleString() },
-      { label: "Expired/Pending", value: riskCount.toLocaleString() },
-      {
-        label: "Average Value",
-        value: averageValue.toLocaleString("en-US", {
-          style: "currency",
-          currency: "USD",
-          maximumFractionDigits: 0,
-        }),
-      },
-    ];
-  }, [permits]);
+export default function StatBar({ summary }: { summary: PermitSummary }) {
+  const stats = [
+    {
+      label: "Total Permits",
+      value: summary.totalPermits.toLocaleString(),
+    },
+    {
+      label: "Issued",
+      value: summary.issuedCount.toLocaleString(),
+    },
+    {
+      label: "Residential",
+      value: summary.residentialCount.toLocaleString(),
+    },
+    {
+      label: "Commercial",
+      value: summary.commercialCount.toLocaleString(),
+    },
+    {
+      label: "Units Added",
+      value: summary.addedGainedUnits.toLocaleString(),
+    },
+    {
+      label: "Units Lost",
+      value: summary.lostEliminatedUnits.toLocaleString(),
+    },
+    {
+      label: "Avg Value",
+      value: formatCurrency(summary.averageValue),
+    },
+  ];
 
   return (
-    <section className="grid grid-cols-2 gap-3 lg:grid-cols-5">
+    <section
+      className="grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7"
+      aria-label="Permit summary statistics"
+    >
       {stats.map((stat) => (
         <div
           key={stat.label}
-          className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-4 shadow-sm last:col-span-2 lg:last:col-span-1"
+          className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-4 shadow-sm"
         >
-          <p className="text-sm text-zinc-400">{stat.label}</p>
-          <p className="mt-1 text-2xl font-semibold text-white">{stat.value}</p>
+          <p className="text-xs text-zinc-400">{stat.label}</p>
+          <p className="mt-1 text-xl font-semibold text-white">{stat.value}</p>
         </div>
       ))}
     </section>

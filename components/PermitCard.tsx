@@ -6,7 +6,8 @@ interface PermitCardProps {
   onClick?: () => void;
 }
 
-const statusClassName = {
+const statusClassName: Record<Permit["status"], string> = {
+  issued: "border-blue-500/30 bg-blue-500/10 text-blue-300",
   open: "border-green-500/30 bg-green-500/10 text-green-400",
   closed: "border-zinc-500/30 bg-zinc-500/10 text-zinc-300",
   expired: "border-red-500/30 bg-red-500/10 text-red-400",
@@ -25,15 +26,20 @@ export default function PermitCard({ permit, selected, onClick }: PermitCardProp
     >
       <div className="flex items-start justify-between gap-3">
         <div>
-          <h3 className="font-semibold text-white">{permit.address}</h3>
+          <h3 className="font-semibold text-white">
+            {permit.displayAddress || permit.address}
+          </h3>
+          {permit.zipCode ? (
+            <p className="text-xs text-zinc-500">ZIP {permit.zipCode}</p>
+          ) : null}
           {permit.useOfBuilding ? (
             <p className="text-sm text-zinc-400">{permit.useOfBuilding}</p>
           ) : null}
         </div>
         <span
-          className={`rounded-full border px-2.5 py-1 text-xs font-medium capitalize ${statusClassName[permit.status]}`}
+          className={`rounded-full border px-2.5 py-1 text-xs font-medium ${statusClassName[permit.status]}`}
         >
-          {permit.status}
+          {permit.rawStatus || permit.status}
         </span>
       </div>
       {permit.dwellingUnitsImpact !== undefined ? (

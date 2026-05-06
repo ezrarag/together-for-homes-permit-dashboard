@@ -1,4 +1,9 @@
-export type PermitStatus = "open" | "closed" | "expired" | "pending";
+export type PermitStatus =
+  | "issued"
+  | "open"
+  | "closed"
+  | "expired"
+  | "pending";
 
 export type PermitType =
   | "new_construction"
@@ -12,34 +17,48 @@ export type PermitType =
 export interface Permit {
   id: string;
   address: string;
-  neighborhood?: string;
+  displayAddress?: string;
   zipCode?: string;
   permitType: PermitType;
   status: PermitStatus;
+  rawStatus?: string;
   openedDate?: string;
   issuedDate: string;
   expirationDate?: string;
   value?: number;
   useOfBuilding?: string;
-  dwellingUnitsImpact?: number;
+  dwellingUnitsImpact?: string;
   lat?: number;
   lng?: number;
 }
 
 export interface PermitFilters {
   type?: PermitType | "all";
-  status?: PermitStatus | "all";
+  status?: string;
   zipCode?: string;
-  neighborhood?: string;
   dateFrom?: string;
   dateTo?: string;
   search?: string;
 }
 
+export interface PermitSummary {
+  totalPermits: number;
+  issuedCount: number;
+  residentialCount: number;
+  commercialCount: number;
+  addedGainedUnits: number;
+  lostEliminatedUnits: number;
+  totalConstructionValue: number;
+  averageValue: number;
+  statusOptions: string[];
+}
+
 export interface DataStatus {
   source: string;
   resourceId: string;
-  lastFetched: string;
+  sourceLastModified?: string;
+  appLastChecked: string;
   totalRecords: number;
+  loadedRecords: number;
   error?: string;
 }

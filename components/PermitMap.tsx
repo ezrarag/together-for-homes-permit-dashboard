@@ -17,7 +17,8 @@ L.Icon.Default.mergeOptions({
     "https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png",
 });
 
-const statusColors = {
+const statusColors: Record<Permit["status"], string> = {
+  issued: "#3b82f6",
   open: "#22c55e",
   closed: "#71717a",
   expired: "#ef4444",
