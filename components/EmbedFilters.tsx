@@ -36,13 +36,15 @@ export default function EmbedFilters({
   }
 
   const inputCls =
-    "w-full rounded border border-zinc-700 bg-zinc-950 px-2.5 py-1.5 text-sm text-zinc-100 outline-none placeholder:text-zinc-600 focus:border-green-500";
+    "w-full rounded-lg border border-gray-300 bg-white px-2.5 py-1.5 text-sm text-gray-800 outline-none placeholder:text-gray-400 focus:border-tfh-blue focus:ring-1 focus:ring-tfh-blue";
 
   return (
     <div className="flex flex-wrap items-end gap-2">
       {/* Search */}
       <label className="flex min-w-[140px] flex-1 flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-400">Search</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Search
+        </span>
         <input
           id={`${id}-search`}
           name="search"
@@ -55,7 +57,9 @@ export default function EmbedFilters({
 
       {/* Permit type */}
       <label className="flex min-w-[140px] flex-1 flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-400">Type</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Type
+        </span>
         <select
           id={`${id}-type`}
           name="type"
@@ -74,7 +78,9 @@ export default function EmbedFilters({
       {/* Status */}
       {statusOptions.length > 0 ? (
         <label className="flex min-w-[120px] flex-1 flex-col gap-1">
-          <span className="text-xs font-medium text-zinc-400">Status</span>
+          <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Status
+          </span>
           <select
             id={`${id}-status`}
             name="status"
@@ -94,7 +100,9 @@ export default function EmbedFilters({
 
       {/* ZIP */}
       <label className="flex w-24 flex-col gap-1">
-        <span className="text-xs font-medium text-zinc-400">ZIP</span>
+        <span className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+          ZIP
+        </span>
         <input
           id={`${id}-zip`}
           name="zipCode"
@@ -112,7 +120,7 @@ export default function EmbedFilters({
         <button
           type="button"
           onClick={() => onChange({})}
-          className="self-end rounded border border-zinc-700 px-3 py-1.5 text-sm font-medium text-zinc-300 hover:border-green-500 hover:text-green-400"
+          className="self-end rounded-lg border border-gray-300 px-3 py-1.5 text-sm font-semibold text-gray-600 hover:border-tfh-blue hover:text-tfh-blue"
         >
           Clear
         </button>

@@ -24,7 +24,7 @@ export default function DataStatusBanner({ status }: DataStatusProps) {
 
   if (status.error) {
     return (
-      <div className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+      <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
         <span className="font-semibold">Data unavailable:</span> {status.error}
       </div>
     );
@@ -36,31 +36,32 @@ export default function DataStatusBanner({ status }: DataStatusProps) {
 
   return (
     <div
-      className="flex flex-wrap items-center gap-x-6 gap-y-2 rounded-lg border border-zinc-800 bg-zinc-900/80 px-4 py-3 text-xs text-zinc-400"
+      className="flex flex-wrap items-center gap-x-6 gap-y-1.5 rounded-xl border border-blue-100 bg-blue-50/60 px-4 py-2.5 text-xs text-gray-600"
       aria-label="Data status"
     >
       <span className="flex items-center gap-1.5">
-        <span className="h-1.5 w-1.5 rounded-full bg-green-500" aria-hidden="true" />
-        <span className="font-medium text-zinc-300">Source:</span>&nbsp;{status.source}
+        <span className="h-2 w-2 rounded-full bg-green-500" aria-hidden="true" />
+        <span className="font-semibold text-tfh-navy">Source:</span>
+        &nbsp;{status.source}
       </span>
       {sourceLastModified ? (
         <span>
-          <span className="font-medium text-zinc-300">Source updated:</span>
+          <span className="font-semibold text-tfh-navy">Source updated:</span>
           &nbsp;{sourceLastModified}
         </span>
       ) : null}
       {appLastChecked ? (
         <span>
-          <span className="font-medium text-zinc-300">Generated:</span>
+          <span className="font-semibold text-tfh-navy">Generated:</span>
           &nbsp;{appLastChecked}
         </span>
       ) : null}
       <span>
-        <span className="font-medium text-zinc-300">Records:</span>&nbsp;
+        <span className="font-semibold text-tfh-navy">Records:</span>&nbsp;
         {status.loadedRecords.toLocaleString()} of{" "}
         {status.totalRecords.toLocaleString()} loaded
         {!fullyLoaded ? (
-          <span className="ml-1 text-amber-400">(partial)</span>
+          <span className="ml-1 text-amber-600">(partial)</span>
         ) : null}
       </span>
     </div>

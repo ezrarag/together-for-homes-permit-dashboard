@@ -15,11 +15,11 @@ import type {
 
 const PermitTable = dynamic(() => import("@/components/PermitTable"), {
   loading: () => (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-4">
-      <div className="h-5 w-36 animate-pulse rounded bg-zinc-800" />
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="h-4 w-36 animate-pulse rounded bg-gray-200" />
       <div className="mt-3 space-y-2">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-9 animate-pulse rounded bg-zinc-800/80" />
+          <div key={i} className="h-9 animate-pulse rounded-lg bg-gray-100" />
         ))}
       </div>
     </div>
@@ -109,19 +109,19 @@ export default function EmbedClient({
   }
 
   return (
-    <div className="flex flex-col gap-3 bg-zinc-950 p-3 text-zinc-100">
-      {/* Compact header */}
-      <header className="flex flex-wrap items-center justify-between gap-2 border-b border-zinc-800 pb-3">
-        <div className="flex items-center gap-2">
-          <span className="text-xs font-semibold uppercase tracking-wide text-green-500">
+    <div className="flex flex-col gap-3 bg-[#f0f4f8] p-3 font-sans">
+      {/* Compact brand header */}
+      <header className="flex flex-wrap items-center justify-between gap-2 rounded-xl border border-tfh-gold/40 bg-tfh-gold/10 px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="text-xs font-bold uppercase tracking-widest text-tfh-navy/60">
             Together For Homes
           </span>
-          <span className="text-zinc-700">·</span>
-          <h1 className="text-sm font-semibold text-white">
+          <span className="text-gray-300">·</span>
+          <h1 className="text-sm font-bold text-tfh-navy">
             Milwaukee Permit Dashboard
           </h1>
         </div>
-        <span className="text-xs text-zinc-500">
+        <span className="text-xs text-gray-500">
           {loading
             ? "Loading…"
             : `${total.toLocaleString()} ${isFiltered ? "matching" : "total"} permits`}
@@ -132,11 +132,13 @@ export default function EmbedClient({
       <StatBar summary={summary} compact />
 
       {/* Inline filters */}
-      <EmbedFilters
-        filters={filters}
-        onChange={setFilters}
-        statusOptions={summary.statusOptions}
-      />
+      <div className="rounded-xl border border-gray-200 bg-white px-4 py-3 shadow-sm">
+        <EmbedFilters
+          filters={filters}
+          onChange={setFilters}
+          statusOptions={summary.statusOptions}
+        />
+      </div>
 
       {/* Table — full width, no map */}
       <PermitTable
@@ -152,7 +154,7 @@ export default function EmbedClient({
         currentFilters={filters}
       />
 
-      {/* Compact data status footer */}
+      {/* Data provenance footer */}
       <DataStatusBanner status={initialDataStatus} />
     </div>
   );

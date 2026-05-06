@@ -16,7 +16,7 @@ import type {
 const PermitMap = dynamic(() => import("@/components/PermitMap"), {
   ssr: false,
   loading: () => (
-    <div className="flex h-[200px] items-center justify-center rounded-lg border border-zinc-800 bg-zinc-900 text-sm text-zinc-400">
+    <div className="flex h-[200px] items-center justify-center rounded-xl border border-gray-200 bg-white text-sm text-gray-400 shadow-sm">
       Loading map…
     </div>
   ),
@@ -24,11 +24,11 @@ const PermitMap = dynamic(() => import("@/components/PermitMap"), {
 
 const PermitTable = dynamic(() => import("@/components/PermitTable"), {
   loading: () => (
-    <div className="rounded-lg border border-zinc-800 bg-zinc-900/80 p-4">
-      <div className="h-5 w-36 animate-pulse rounded bg-zinc-800" />
+    <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+      <div className="h-4 w-36 animate-pulse rounded bg-gray-200" />
       <div className="mt-4 space-y-3">
         {Array.from({ length: 5 }).map((_, i) => (
-          <div key={i} className="h-10 animate-pulse rounded-md bg-zinc-800/80" />
+          <div key={i} className="h-10 animate-pulse rounded-lg bg-gray-100" />
         ))}
       </div>
     </div>
@@ -107,7 +107,6 @@ export default function DashboardClient({
 
   // Reset to page 1 and fetch when filters change
   useEffect(() => {
-    // On mount with no filters, initial server data is already set — skip first fetch
     if (!isFiltered && page === 1) return;
     fetchPage(filters, 1);
     setPage(1);
@@ -124,59 +123,68 @@ export default function DashboardClient({
   }
 
   return (
-    <main className="min-h-screen bg-zinc-950 text-zinc-100">
-      <div className="mx-auto flex max-w-7xl flex-col gap-5 px-4 py-5 sm:px-6 lg:px-8">
-        <header className="flex flex-col gap-2 border-b border-zinc-800 pb-5">
-          <p className="text-sm font-medium uppercase tracking-wide text-green-500">
+    <main className="min-h-screen font-sans">
+      {/* ── Gold campaign header band ── */}
+      <div className="bg-tfh-gold pb-16 pt-8">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <p className="text-xs font-bold uppercase tracking-[0.2em] text-tfh-navy/60">
             Together For Homes Coalition
           </p>
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="mt-2 flex flex-wrap items-end justify-between gap-4">
             <div>
-              <h1 className="text-3xl font-semibold text-white">
+              <h1 className="text-3xl font-bold uppercase tracking-wide text-tfh-navy sm:text-4xl">
                 Milwaukee Permit Dashboard
               </h1>
-              <p className="mt-2 max-w-3xl text-sm leading-6 text-zinc-400">
-                Public permit activity across Milwaukee, sourced live from the
-                City of Milwaukee Open Data portal.
+              <p className="mt-2 max-w-2xl text-sm leading-relaxed text-tfh-navy/75">
+                Track how permit activity reflects housing production,
+                implementation progress, and neighborhood-level change.
               </p>
             </div>
-            <div className="text-sm text-zinc-500">
+            <p className="text-sm font-medium text-tfh-navy/60">
               {loading
                 ? "Loading…"
                 : `${total.toLocaleString()} ${isFiltered ? "matching" : "total"} permits`}
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── White content panel — floats over gold band ── */}
+      <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div className="-mt-8 min-h-[80vh] rounded-t-[28px] bg-white px-4 py-6 shadow-xl sm:px-6">
+          <div className="flex flex-col gap-5">
+            <DataStatusBanner status={initialDataStatus} />
+
+            <StatBar summary={summary} />
+
+            <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
+              <FilterSidebar
+                filters={filters}
+                onChange={handleFiltersChange}
+                statusOptions={summary.statusOptions}
+              />
+              <section className="flex flex-col gap-5">
+                <PermitMap
+                  permits={permits}
+                  loading={loading}
+                  selectedPermit={selectedPermit}
+                  onSelectPermit={setSelectedPermit}
+                />
+                <PermitTable
+                  permits={permits}
+                  loading={loading}
+                  page={page}
+                  pageCount={pageCount}
+                  total={total}
+                  selectedPermit={selectedPermit}
+                  onSelectPermit={setSelectedPermit}
+                  onPageChange={handlePageChange}
+                  onClearFilters={() => handleFiltersChange({})}
+                  currentFilters={filters}
+                />
+              </section>
             </div>
           </div>
-        </header>
-
-        <DataStatusBanner status={initialDataStatus} />
-
-        <StatBar summary={summary} />
-
-        <div className="grid gap-5 lg:grid-cols-[280px_1fr]">
-          <FilterSidebar
-            filters={filters}
-            onChange={handleFiltersChange}
-            statusOptions={summary.statusOptions}
-          />
-          <section className="flex flex-col gap-5">
-            <PermitMap
-              permits={permits}
-              selectedPermit={selectedPermit}
-              onSelectPermit={setSelectedPermit}
-            />
-            <PermitTable
-              permits={permits}
-              loading={loading}
-              page={page}
-              pageCount={pageCount}
-              total={total}
-              selectedPermit={selectedPermit}
-              onSelectPermit={setSelectedPermit}
-              onPageChange={handlePageChange}
-              onClearFilters={() => handleFiltersChange({})}
-              currentFilters={filters}
-            />
-          </section>
         </div>
       </div>
     </main>

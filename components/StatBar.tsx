@@ -25,36 +25,43 @@ export default function StatBar({ summary, compact = false }: StatBarProps) {
       label: "Total Permits",
       value: summary.totalPermits.toLocaleString(),
       key: "total",
+      accent: "bg-tfh-blue",
     },
     {
       label: "Issued",
       value: summary.issuedCount.toLocaleString(),
       key: "issued",
+      accent: "bg-tfh-blue-btn",
     },
     {
       label: "Residential",
       value: summary.residentialCount.toLocaleString(),
       key: "residential",
+      accent: "bg-tfh-gold",
     },
     {
       label: "Commercial",
       value: summary.commercialCount.toLocaleString(),
       key: "commercial",
+      accent: "bg-tfh-gold-dk",
     },
     {
       label: "Permits Adding Units",
       value: summary.addedGainedUnits.toLocaleString(),
       key: "adding",
+      accent: "bg-tfh-blue",
     },
     {
       label: "Permits Losing Units",
       value: summary.lostEliminatedUnits.toLocaleString(),
       key: "losing",
+      accent: "bg-red-400",
     },
     {
       label: "Avg Value",
       value: formatCurrency(summary.averageValue),
       key: "avg",
+      accent: "bg-tfh-gold",
     },
   ];
 
@@ -68,19 +75,23 @@ export default function StatBar({ summary, compact = false }: StatBarProps) {
     ? "grid grid-cols-2 gap-2 sm:grid-cols-4"
     : "grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-7";
 
-  const cardCls = compact
-    ? "rounded-lg border border-zinc-800 bg-zinc-900/80 px-3 py-2 shadow-sm"
-    : "rounded-lg border border-zinc-800 bg-zinc-900/80 p-4 shadow-sm";
-
+  const cardPad = compact ? "px-3 py-2.5" : "p-4";
   const valueCls = compact
-    ? "mt-0.5 text-lg font-semibold text-white"
-    : "mt-1 text-xl font-semibold text-white";
+    ? "mt-0.5 text-lg font-bold text-tfh-navy"
+    : "mt-1 text-xl font-bold text-tfh-navy";
 
   return (
     <section className={gridCls} aria-label="Permit summary statistics">
       {stats.map((stat) => (
-        <div key={stat.label} className={cardCls}>
-          <p className="text-xs text-zinc-400">{stat.label}</p>
+        <div
+          key={stat.label}
+          className={`rounded-xl border border-gray-200 bg-white shadow-sm ${cardPad}`}
+        >
+          {/* Colored accent stripe */}
+          <div className={`mb-2 h-1 w-8 rounded-full ${stat.accent}`} />
+          <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
+            {stat.label}
+          </p>
           <p className={valueCls}>{stat.value}</p>
         </div>
       ))}
