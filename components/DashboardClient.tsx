@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DataStatusBanner from "@/components/DataStatus";
+import ReportHub from "@/components/ReportHub";
 import ReportSlicers from "@/components/ReportSlicers";
 import StatBar from "@/components/StatBar";
 import { PERMIT_PAGE_SIZE } from "@/lib/permit-config";
@@ -11,9 +12,12 @@ import type {
   Permit,
   PermitFilters,
   PermitSummary,
+  ReportSection,
+  SectionKey,
 } from "@/lib/types";
 
-// Chart panel — loaded client-side only (recharts requires browser APIs)
+// ── Dynamic imports (recharts requires browser APIs) ─────────────────────────
+
 const ReportCharts = dynamic(() => import("@/components/ReportCharts"), {
   ssr: false,
   loading: () => (
@@ -21,6 +25,25 @@ const ReportCharts = dynamic(() => import("@/components/ReportCharts"), {
       {Array.from({ length: 4 }).map((_, i) => (
         <div key={i} className="h-64 rounded-xl bg-gray-100" />
       ))}
+    </div>
+  ),
+});
+
+const SectionView = dynamic(() => import("@/components/SectionView"), {
+  ssr: false,
+  loading: () => (
+    <div className="animate-pulse space-y-5">
+      <div className="h-4 w-3/4 rounded bg-gray-100" />
+      <div className="grid gap-4 sm:grid-cols-3">
+        {[0, 1, 2].map((i) => (
+          <div key={i} className="h-28 rounded-xl bg-gray-100" />
+        ))}
+      </div>
+      <div className="grid gap-5 lg:grid-cols-2">
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} className="h-52 rounded-xl bg-gray-100" />
+        ))}
+      </div>
     </div>
   ),
 });
@@ -38,6 +61,28 @@ const PermitTable = dynamic(() => import("@/components/PermitTable"), {
   ),
 });
 
+// ── Nav config ────────────────────────────────────────────────────────────────
+
+interface NavItem {
+  section: ReportSection;
+  label: string;
+  shortLabel: string;
+  accentColor: string;
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { section: "hub", label: "Report Hub", shortLabel: "Hub", accentColor: "#9ca3af" },
+  { section: "residential", label: "Residential", shortLabel: "Residential", accentColor: "#019cf2" },
+  { section: "multi_family", label: "Multi-Family", shortLabel: "Multi-Family", accentColor: "#f0a41a" },
+  { section: "commercial", label: "Commercial", shortLabel: "Commercial", accentColor: "#00304c" },
+  { section: "units", label: "Units Impact", shortLabel: "Units", accentColor: "#10b981" },
+  { section: "records", label: "All Records", shortLabel: "Records", accentColor: "#6b7280" },
+];
+
+const SECTION_KEYS = new Set<ReportSection>(["residential", "multi_family", "commercial", "units"]);
+
+// ── Types ─────────────────────────────────────────────────────────────────────
+
 interface ApiResult {
   permits: Permit[];
   total: number;
@@ -52,12 +97,18 @@ interface DashboardClientProps {
   initialDataStatus: DataStatus;
 }
 
+// ── Component ─────────────────────────────────────────────────────────────────
+
 export default function DashboardClient({
   initialPermits,
   initialTotal,
   summary,
   initialDataStatus,
 }: DashboardClientProps) {
+  // Report navigation
+  const [section, setSection] = useState<ReportSection>("hub");
+
+  // Records-section state
   const [filters, setFilters] = useState<PermitFilters>({});
   const [page, setPage] = useState(1);
   const [permits, setPermits] = useState<Permit[]>(initialPermits);
@@ -120,9 +171,12 @@ export default function DashboardClient({
     fetchPage(filters, target);
   }
 
+  // Derive whether the current section is one of the 4 category sections
+  const isSectionView = SECTION_KEYS.has(section);
+
   return (
     <main className="min-h-screen font-sans">
-      {/* ── Gold campaign header band ── */}
+      {/* ── Gold campaign header band ────────────────────────────────────── */}
       <div className="bg-tfh-gold pb-16 pt-8">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <p className="text-xs font-bold uppercase tracking-[0.2em] text-tfh-navy/60">
@@ -134,62 +188,118 @@ export default function DashboardClient({
                 Milwaukee Permit Dashboard
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-tfh-navy/75">
-                Track how permit activity reflects housing production,
-                implementation progress, and neighborhood-level change.
+                Track how permit activity reflects housing production, implementation
+                progress, and neighborhood-level change.
               </p>
             </div>
-            <p className="text-sm font-medium text-tfh-navy/60">
-              {loading
-                ? "Loading…"
-                : `${total.toLocaleString()} ${isFiltered ? "matching" : "total"} permits`}
-            </p>
+            {section === "records" && (
+              <p className="text-sm font-medium text-tfh-navy/60">
+                {loading
+                  ? "Loading…"
+                  : `${total.toLocaleString()} ${isFiltered ? "matching" : "total"} permits`}
+              </p>
+            )}
           </div>
         </div>
       </div>
 
-      {/* ── White report panel ── */}
+      {/* ── White report panel ───────────────────────────────────────────── */}
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div className="-mt-8 min-h-[80vh] rounded-t-[28px] bg-white px-4 py-6 shadow-xl sm:px-6">
           <div className="flex flex-col gap-5">
+
             {/* Data provenance */}
             <DataStatusBanner status={initialDataStatus} />
 
-            {/* KPI row */}
+            {/* KPI summary bar (always visible) */}
             <StatBar summary={summary} />
 
-            {/* ── Horizontal slicer bar (Power BI style) ── */}
-            <ReportSlicers
-              filters={filters}
-              onChange={setFilters}
-              statusOptions={summary.statusOptions}
-            />
+            {/* ── Section navigation tabs ──────────────────────────────── */}
+            <nav
+              className="scrollbar-none -mx-1 flex items-center gap-1 overflow-x-auto px-1 pb-1"
+              aria-label="Report sections"
+            >
+              {NAV_ITEMS.map((item) => {
+                const active = section === item.section;
+                return (
+                  <button
+                    key={item.section}
+                    onClick={() => setSection(item.section)}
+                    className={`flex-shrink-0 rounded-lg px-3.5 py-2 text-xs font-semibold transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tfh-blue ${
+                      active
+                        ? "text-white shadow-sm"
+                        : "bg-gray-100 text-gray-600 hover:bg-gray-200 hover:text-gray-800"
+                    }`}
+                    style={active ? { backgroundColor: item.accentColor } : undefined}
+                    aria-current={active ? "page" : undefined}
+                  >
+                    <span className="hidden sm:inline">{item.label}</span>
+                    <span className="sm:hidden">{item.shortLabel}</span>
+                  </button>
+                );
+              })}
+            </nav>
 
-            {/* ── 2×2 chart grid ── */}
-            <ReportCharts summary={summary} />
+            {/* ── Hub ──────────────────────────────────────────────────── */}
+            {section === "hub" && (
+              <>
+                <ReportHub summary={summary} onNavigate={setSection} />
 
-            {/* ── Detail table (responds to filters) ── */}
-            <section>
-              <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-tfh-navy">
-                Permit Records
-                {isFiltered && (
-                  <span className="ml-2 font-normal normal-case tracking-normal text-gray-400">
-                    — filtered view
-                  </span>
-                )}
-              </h2>
-              <PermitTable
-                permits={permits}
-                loading={loading}
-                page={page}
-                pageCount={pageCount}
-                total={total}
-                selectedPermit={selectedPermit}
-                onSelectPermit={setSelectedPermit}
-                onPageChange={handlePageChange}
-                onClearFilters={() => setFilters({})}
-                currentFilters={filters}
-              />
-            </section>
+                {/* Overview charts — full dataset, server-computed */}
+                <div>
+                  <div className="mb-4 flex items-center gap-3">
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-tfh-navy">
+                      Portfolio Overview
+                    </h2>
+                    <div className="h-px flex-1 bg-gray-100" />
+                    <span className="text-xs text-gray-400">Full dataset · all permit types</span>
+                  </div>
+                  <ReportCharts summary={summary} />
+                </div>
+              </>
+            )}
+
+            {/* ── Category section views ────────────────────────────────── */}
+            {isSectionView && (
+              <SectionView section={section as SectionKey} />
+            )}
+
+            {/* ── All Records ───────────────────────────────────────────── */}
+            {section === "records" && (
+              <>
+                {/* Horizontal slicer bar */}
+                <ReportSlicers
+                  filters={filters}
+                  onChange={setFilters}
+                  statusOptions={summary.statusOptions}
+                />
+
+                {/* Detail table */}
+                <section>
+                  <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-tfh-navy">
+                    Permit Records
+                    {isFiltered && (
+                      <span className="ml-2 font-normal normal-case tracking-normal text-gray-400">
+                        — filtered view
+                      </span>
+                    )}
+                  </h2>
+                  <PermitTable
+                    permits={permits}
+                    loading={loading}
+                    page={page}
+                    pageCount={pageCount}
+                    total={total}
+                    selectedPermit={selectedPermit}
+                    onSelectPermit={setSelectedPermit}
+                    onPageChange={handlePageChange}
+                    onClearFilters={() => setFilters({})}
+                    currentFilters={filters}
+                  />
+                </section>
+              </>
+            )}
+
           </div>
         </div>
       </div>

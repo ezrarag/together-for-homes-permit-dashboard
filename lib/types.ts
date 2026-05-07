@@ -1,3 +1,16 @@
+// ── Report navigation ────────────────────────────────────────────────────────
+
+export type ReportSection =
+  | "hub"
+  | "residential"
+  | "multi_family"
+  | "commercial"
+  | "units"
+  | "records";
+
+/** Sections that map to a project-category filter (i.e. not hub or records). */
+export type SectionKey = Exclude<ReportSection, "hub" | "records">;
+
 // ── Enum-like string union types ─────────────────────────────────────────────
 
 export type PermitStatus =
@@ -175,6 +188,26 @@ export interface MonthlyDataPoint {
 }
 
 /**
+ * Per-project-category aggregates computed from the full dataset.
+ * Included in PermitSummary to power the Report Hub cards without extra API calls.
+ */
+export interface ProjectCategoryBreakdown {
+  category: PermitProjectCategory;
+  /** Human-readable label for this category */
+  label: string;
+  /** Total permit records in this category */
+  count: number;
+  /** Permits where issueDate is present */
+  permitsIssued: number;
+  /** Sum of Construction Total Cost for this category */
+  totalValuation: number;
+  /** Permits where "Dwelling units impact" includes "Added or Gained" */
+  unitsAdded: number;
+  /** Permits where "Dwelling units impact" includes "Lost or Eliminated" */
+  unitsLost: number;
+}
+
+/**
  * Aggregate statistics and chart breakdowns for the full dataset.
  * Computed server-side at build/revalidation time; not filter-aware.
  */
@@ -193,6 +226,8 @@ export interface PermitSummary {
   permitsByUse: UseOfBuildingBreakdown[];   // top 12
   dwellingImpact: DwellingImpactBreakdown;
   monthlyTrend: MonthlyDataPoint[];         // last 24 months, chronological
+  // Report Hub card data — per-category aggregates
+  projectCategoryBreakdown: ProjectCategoryBreakdown[];
 }
 
 export interface DataStatus {

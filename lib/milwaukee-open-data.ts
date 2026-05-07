@@ -9,6 +9,7 @@ import type {
   PermitSummary,
   PermitType,
   PermitTypeBreakdown,
+  ProjectCategoryBreakdown,
   UseOfBuildingBreakdown,
 } from "@/lib/types";
 
@@ -292,6 +293,20 @@ async function fetchPackageMetadata(): Promise<string | undefined> {
 
 // ── Summary computation ──────────────────────────────────────────────────────
 
+const CATEGORY_LABELS: Record<PermitProjectCategory, string> = {
+  residential_single_duplex: "Residential (1–2 Unit)",
+  multi_family: "Multi-Family (3+ Units)",
+  commercial: "Commercial / Industrial",
+  other: "Other / Unclassified",
+};
+
+const CATEGORY_ORDER: PermitProjectCategory[] = [
+  "residential_single_duplex",
+  "multi_family",
+  "commercial",
+  "other",
+];
+
 const TYPE_LABELS: Record<PermitType, string> = {
   new_construction: "New Construction",
   renovation: "Renovation",
@@ -322,6 +337,12 @@ export function computeSummary(permits: Permit[]): PermitSummary {
   const monthMap = new Map<string, { count: number; totalValue: number }>();
   const dwellingImpact: DwellingImpactBreakdown = { maintain: 0, added: 0, lost: 0 };
 
+  // Per-category aggregates for Report Hub cards
+  const categoryMap = new Map<
+    PermitProjectCategory,
+    { count: number; permitsIssued: number; totalValuation: number; unitsAdded: number; unitsLost: number }
+  >();
+
   for (const p of permits) {
     // KPI counters
     if (p.rawStatus) statusSet.add(p.rawStatus);
@@ -350,6 +371,32 @@ export function computeSummary(permits: Permit[]): PermitSummary {
     if (typeof p.value === "number" && p.value > 0) {
       totalConstructionValue += p.value;
       valuedCount++;
+    }
+
+    // Category breakdown for Report Hub cards
+    {
+      const cat = p.projectCategory;
+      const catDwelling = dwelling;
+      const catExisting = categoryMap.get(cat) ?? {
+        count: 0,
+        permitsIssued: 0,
+        totalValuation: 0,
+        unitsAdded: 0,
+        unitsLost: 0,
+      };
+      categoryMap.set(cat, {
+        count: catExisting.count + 1,
+        permitsIssued: catExisting.permitsIssued + (p.issueDate ? 1 : 0),
+        totalValuation:
+          catExisting.totalValuation +
+          (typeof p.value === "number" && p.value > 0 ? p.value : 0),
+        unitsAdded:
+          catExisting.unitsAdded +
+          (catDwelling.includes("added") || catDwelling.includes("gained") ? 1 : 0),
+        unitsLost:
+          catExisting.unitsLost +
+          (catDwelling.includes("lost") || catDwelling.includes("eliminated") ? 1 : 0),
+      });
     }
 
     // Permit type breakdown
@@ -406,6 +453,14 @@ export function computeSummary(permits: Permit[]): PermitSummary {
       return { month, label, ...data };
     });
 
+  const projectCategoryBreakdown: ProjectCategoryBreakdown[] = CATEGORY_ORDER
+    .filter((cat) => categoryMap.has(cat))
+    .map((cat) => ({
+      category: cat,
+      label: CATEGORY_LABELS[cat],
+      ...(categoryMap.get(cat)!),
+    }));
+
   return {
     totalPermits: permits.length,
     issuedCount,
@@ -421,6 +476,8 @@ export function computeSummary(permits: Permit[]): PermitSummary {
     permitsByUse,
     dwellingImpact,
     monthlyTrend,
+    // Report Hub card data
+    projectCategoryBreakdown,
   };
 }
 
