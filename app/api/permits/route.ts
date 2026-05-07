@@ -1,4 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
+import { computeLifecycleMetrics, filterToTimeWindow } from "@/lib/lifecycle-metrics";
+import type { TimeWindow } from "@/lib/lifecycle-metrics";
 import { fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
 import { PERMIT_API_MAX_PAGE_SIZE, PERMIT_PAGE_SIZE } from "@/lib/permit-config";
 import {
@@ -75,6 +77,11 @@ export async function GET(req: NextRequest) {
     positiveInt(searchParams.get("limit"), PERMIT_PAGE_SIZE),
   );
   const exportMode = searchParams.get("export");
+  const rawTimeWindow = searchParams.get("timeWindow");
+  const timeWindow: TimeWindow | undefined =
+    rawTimeWindow === "30" || rawTimeWindow === "90" || rawTimeWindow === "12m"
+      ? rawTimeWindow
+      : undefined;
 
   const raw = {
     type: searchParams.get("type") ?? undefined,
@@ -117,12 +124,15 @@ export async function GET(req: NextRequest) {
       currentPage * limit,
     );
 
-    // Compute metrics from the full filtered set (not just the current page)
+    // Compute metrics from the full filtered set (not just the current page).
+    // Lifecycle metrics honour the optional time-window sub-filter.
     const summary = computeFilteredSummary(filtered);
     const monthlyData = computeMonthlyData(filtered);
+    const lifecycleSource = timeWindow ? filterToTimeWindow(filtered, timeWindow) : filtered;
+    const lifecycle = computeLifecycleMetrics(lifecycleSource);
 
     return NextResponse.json(
-      { permits, total, page: currentPage, pageCount, summary, monthlyData },
+      { permits, total, page: currentPage, pageCount, summary, monthlyData, lifecycle },
       {
         headers: {
           "Cache-Control": `public, s-maxage=${60 * 60 * 12}, stale-while-revalidate`,

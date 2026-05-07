@@ -11,6 +11,9 @@ export type ReportSection =
 /** Sections that map to a project-category filter (i.e. not hub or records). */
 export type SectionKey = Exclude<ReportSection, "hub" | "records">;
 
+/** Time-window options for the lifecycle aggregate metric cards. */
+export type TimeWindow = "30" | "90" | "12m";
+
 // ── Enum-like string union types ─────────────────────────────────────────────
 
 export type PermitStatus =

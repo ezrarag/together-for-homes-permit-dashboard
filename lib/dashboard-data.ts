@@ -1,11 +1,16 @@
+import { computeLifecycleMetrics } from "@/lib/lifecycle-metrics";
+import type { LifecycleMetrics } from "@/lib/lifecycle-metrics";
 import { computeSummary, fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
 import { PERMIT_PAGE_SIZE } from "@/lib/permit-config";
 import type { DataStatus, Permit, PermitSummary } from "@/lib/types";
+
+export type { LifecycleMetrics };
 
 export interface DashboardData {
   initialPermits: Permit[];
   initialTotal: number;
   summary: PermitSummary;
+  initialLifecycle: LifecycleMetrics;
   initialDataStatus: DataStatus;
 }
 
@@ -40,6 +45,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
     const { permits: allPermits, dataStatus } = await fetchMilwaukeePermits();
     return {
       summary: computeSummary(allPermits),
+      initialLifecycle: computeLifecycleMetrics(allPermits),
       initialPermits: allPermits.slice(0, PERMIT_PAGE_SIZE),
       initialTotal: allPermits.length,
       initialDataStatus: dataStatus,
@@ -48,6 +54,7 @@ export async function loadDashboardData(): Promise<DashboardData> {
     const message = err instanceof Error ? err.message : "Unknown error";
     return {
       summary: EMPTY_SUMMARY,
+      initialLifecycle: computeLifecycleMetrics([]),
       initialPermits: [],
       initialTotal: 0,
       initialDataStatus: ERROR_STATUS(message),

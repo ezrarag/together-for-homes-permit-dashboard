@@ -3,9 +3,13 @@
 import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import DataStatusBanner from "@/components/DataStatus";
+import LifecycleSummaryCards from "@/components/LifecycleSummaryCards";
+import MethodologyNote from "@/components/MethodologyNote";
 import ReportHub from "@/components/ReportHub";
 import ReportSlicers from "@/components/ReportSlicers";
 import StatBar from "@/components/StatBar";
+import TimeWindowToggle from "@/components/TimeWindowToggle";
+import type { LifecycleMetrics } from "@/lib/lifecycle-metrics";
 import { PERMIT_PAGE_SIZE } from "@/lib/permit-config";
 import type {
   DataStatus,
@@ -14,9 +18,28 @@ import type {
   PermitSummary,
   ReportSection,
   SectionKey,
+  TimeWindow,
 } from "@/lib/types";
 
-// ── Dynamic imports (recharts requires browser APIs) ─────────────────────────
+// ── Dynamic imports (recharts + heavy components) ─────────────────────────────
+
+const PermitBarChart = dynamic(() => import("@/components/PermitBarChart"), {
+  ssr: false,
+  loading: () => <div className="h-72 animate-pulse rounded-xl bg-gray-100" />,
+});
+
+const SubmittedVsIssuedChart = dynamic(
+  () => import("@/components/SubmittedVsIssuedChart"),
+  {
+    ssr: false,
+    loading: () => <div className="h-56 animate-pulse rounded-xl bg-gray-100" />,
+  },
+);
+
+const AverageDaysChart = dynamic(() => import("@/components/AverageDaysChart"), {
+  ssr: false,
+  loading: () => <div className="h-56 animate-pulse rounded-xl bg-gray-100" />,
+});
 
 const ReportCharts = dynamic(() => import("@/components/ReportCharts"), {
   ssr: false,
@@ -71,9 +94,9 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { section: "hub", label: "Report Hub", shortLabel: "Hub", accentColor: "#9ca3af" },
+  { section: "hub", label: "Lifecycle Hub", shortLabel: "Hub", accentColor: "#00304c" },
   { section: "residential", label: "Residential", shortLabel: "Residential", accentColor: "#019cf2" },
-  { section: "multi_family", label: "Multi-Family", shortLabel: "Multi-Family", accentColor: "#f0a41a" },
+  { section: "multi_family", label: "Multi-Family", shortLabel: "Multi-Fam", accentColor: "#f0a41a" },
   { section: "commercial", label: "Commercial", shortLabel: "Commercial", accentColor: "#00304c" },
   { section: "units", label: "Units Impact", shortLabel: "Units", accentColor: "#10b981" },
   { section: "records", label: "All Records", shortLabel: "Records", accentColor: "#6b7280" },
@@ -88,12 +111,14 @@ interface ApiResult {
   total: number;
   page: number;
   pageCount: number;
+  lifecycle: LifecycleMetrics;
 }
 
 interface DashboardClientProps {
   initialPermits: Permit[];
   initialTotal: number;
   summary: PermitSummary;
+  initialLifecycle: LifecycleMetrics;
   initialDataStatus: DataStatus;
 }
 
@@ -103,12 +128,18 @@ export default function DashboardClient({
   initialPermits,
   initialTotal,
   summary,
+  initialLifecycle,
   initialDataStatus,
 }: DashboardClientProps) {
   // Report navigation
   const [section, setSection] = useState<ReportSection>("hub");
 
-  // Records-section state
+  // Lifecycle tracking state
+  const [timeWindow, setTimeWindow] = useState<TimeWindow>("12m");
+  const [lifecycle, setLifecycle] = useState<LifecycleMetrics>(initialLifecycle);
+  const [lifecycleLoading, setLifecycleLoading] = useState(false);
+
+  // Records-section pagination + filter state
   const [filters, setFilters] = useState<PermitFilters>({});
   const [page, setPage] = useState(1);
   const [permits, setPermits] = useState<Permit[]>(initialPermits);
@@ -116,7 +147,7 @@ export default function DashboardClient({
   const [pageCount, setPageCount] = useState(
     Math.max(1, Math.ceil(initialTotal / PERMIT_PAGE_SIZE)),
   );
-  const [loading, setLoading] = useState(false);
+  const [tableLoading, setTableLoading] = useState(false);
   const [selectedPermit, setSelectedPermit] = useState<Permit | null>(null);
 
   const isFiltered = useMemo(
@@ -127,9 +158,34 @@ export default function DashboardClient({
     [filters],
   );
 
+  // ── Fetch lifecycle metrics for a new time window ─────────────────────────
+
+  const fetchLifecycle = useCallback(async (window: TimeWindow) => {
+    setLifecycleLoading(true);
+    try {
+      const params = new URLSearchParams({ limit: "1", timeWindow: window });
+      const res = await fetch(`/api/permits?${params}`);
+      if (!res.ok) throw new Error(`API error ${res.status}`);
+      const data = await res.json() as { lifecycle: LifecycleMetrics };
+      if (data.lifecycle) setLifecycle(data.lifecycle);
+    } catch {
+      // keep previous metrics on error
+    } finally {
+      setLifecycleLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    // "12m" is the initial server-rendered default — no refetch needed
+    if (timeWindow === "12m") return;
+    fetchLifecycle(timeWindow);
+  }, [timeWindow, fetchLifecycle]);
+
+  // ── Fetch paginated records (Records section) ─────────────────────────────
+
   const fetchPage = useCallback(
     async (nextFilters: PermitFilters, nextPage: number) => {
-      setLoading(true);
+      setTableLoading(true);
       try {
         const params = new URLSearchParams({
           page: String(nextPage),
@@ -157,7 +213,7 @@ export default function DashboardClient({
       } catch {
         // keep previous results on error
       } finally {
-        setLoading(false);
+        setTableLoading(false);
       }
     },
     [],
@@ -175,8 +231,16 @@ export default function DashboardClient({
     fetchPage(filters, target);
   }
 
-  // Derive whether the current section is one of the 4 category sections
   const isSectionView = SECTION_KEYS.has(section);
+
+  // ── Label for time window context ─────────────────────────────────────────
+
+  const windowLabel =
+    timeWindow === "30"
+      ? "Last 30 Days"
+      : timeWindow === "90"
+        ? "Last 90 Days"
+        : "Last 12 Months";
 
   return (
     <main className="min-h-screen font-sans">
@@ -192,13 +256,13 @@ export default function DashboardClient({
                 Milwaukee Permit Dashboard
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-tfh-navy/75">
-                Track how permit activity reflects housing production, implementation
-                progress, and neighborhood-level change.
+                Permit lifecycle tracking — application-to-issuance timing,
+                housing production metrics, and advocacy analytics.
               </p>
             </div>
             {section === "records" && (
               <p className="text-sm font-medium text-tfh-navy/60">
-                {loading
+                {tableLoading
                   ? "Loading…"
                   : `${total.toLocaleString()} ${isFiltered ? "matching" : "total"} permits`}
               </p>
@@ -244,12 +308,57 @@ export default function DashboardClient({
               })}
             </nav>
 
-            {/* ── Hub ──────────────────────────────────────────────────── */}
+            {/* ════════════════════════════════════════════════════════════
+                HUB — Lifecycle tracking + Report Hub cards
+            ════════════════════════════════════════════════════════════ */}
             {section === "hub" && (
               <>
+                {/* ── Lifecycle analytics header ── */}
+                <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div>
+                    <h2 className="text-xs font-bold uppercase tracking-widest text-tfh-navy">
+                      Permit Lifecycle Analytics
+                    </h2>
+                    <p className="mt-0.5 text-xs text-gray-500">
+                      Application-to-issuance timing · {windowLabel}
+                    </p>
+                  </div>
+                  <TimeWindowToggle
+                    value={timeWindow}
+                    onChange={setTimeWindow}
+                    loading={lifecycleLoading}
+                  />
+                </div>
+
+                {/* ── 4 advocacy KPI cards (avg days featured) ── */}
+                <LifecycleSummaryCards metrics={lifecycle} />
+
+                {/* ── Permit volume by category (Bend-style bar chart) ── */}
+                <PermitBarChart metrics={lifecycle} />
+
+                {/* ── Trend charts ── */}
+                <div className="grid gap-5 lg:grid-cols-2">
+                  <SubmittedVsIssuedChart data={lifecycle.monthly} />
+                  <AverageDaysChart
+                    data={lifecycle.monthly}
+                    overallAvg={lifecycle.averageDaysToIssue}
+                  />
+                </div>
+
+                {/* ── Methodology disclosure ── */}
+                <MethodologyNote />
+
+                {/* Separator */}
+                <div className="flex items-center gap-3">
+                  <div className="h-px flex-1 bg-gray-100" />
+                  <span className="text-xs text-gray-400">Report Sections</span>
+                  <div className="h-px flex-1 bg-gray-100" />
+                </div>
+
+                {/* ── Report Hub cards (drill-in navigation) ── */}
                 <ReportHub summary={summary} onNavigate={setSection} />
 
-                {/* Overview charts — full dataset, server-computed */}
+                {/* ── Full portfolio overview charts ── */}
                 <div>
                   <div className="mb-4 flex items-center gap-3">
                     <h2 className="text-xs font-bold uppercase tracking-widest text-tfh-navy">
@@ -263,22 +372,24 @@ export default function DashboardClient({
               </>
             )}
 
-            {/* ── Category section views ────────────────────────────────── */}
+            {/* ════════════════════════════════════════════════════════════
+                Category section drill-in views
+            ════════════════════════════════════════════════════════════ */}
             {isSectionView && (
               <SectionView section={section as SectionKey} />
             )}
 
-            {/* ── All Records ───────────────────────────────────────────── */}
+            {/* ════════════════════════════════════════════════════════════
+                All Records — filters + paginated table
+            ════════════════════════════════════════════════════════════ */}
             {section === "records" && (
               <>
-                {/* Horizontal slicer bar */}
                 <ReportSlicers
                   filters={filters}
                   onChange={setFilters}
                   statusOptions={summary.statusOptions}
                 />
 
-                {/* Detail table */}
                 <section>
                   <h2 className="mb-3 text-xs font-bold uppercase tracking-widest text-tfh-navy">
                     Permit Records
@@ -290,7 +401,7 @@ export default function DashboardClient({
                   </h2>
                   <PermitTable
                     permits={permits}
-                    loading={loading}
+                    loading={tableLoading}
                     page={page}
                     pageCount={pageCount}
                     total={total}
