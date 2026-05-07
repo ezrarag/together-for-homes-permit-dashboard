@@ -137,11 +137,15 @@ export default function DashboardClient({
         });
         if (nextFilters.type && nextFilters.type !== "all")
           params.set("type", nextFilters.type);
+        if (nextFilters.projectCategory && nextFilters.projectCategory !== "all")
+          params.set("projectCategory", nextFilters.projectCategory);
         if (nextFilters.status) params.set("status", nextFilters.status);
         if (nextFilters.zipCode) params.set("zipCode", nextFilters.zipCode);
+        if (nextFilters.dateBasis) params.set("dateBasis", nextFilters.dateBasis);
         if (nextFilters.dateFrom) params.set("dateFrom", nextFilters.dateFrom);
         if (nextFilters.dateTo) params.set("dateTo", nextFilters.dateTo);
         if (nextFilters.search) params.set("search", nextFilters.search);
+        if (nextFilters.useOfBuilding) params.set("useOfBuilding", nextFilters.useOfBuilding);
 
         const res = await fetch(`/api/permits?${params}`);
         if (!res.ok) throw new Error(`API error ${res.status}`);

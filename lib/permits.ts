@@ -31,9 +31,16 @@ export function filterPermits(
       return false;
     }
 
-    // Date range uses issueDate ("Date Issued") as the primary axis.
-    // Falls back to applicationDate ("Date Opened") when issueDate is absent.
-    const dateField = permit.issueDate || permit.applicationDate || "";
+    // Date range — axis selected by dateBasis:
+    //   "application" → applicationDate ("Date Opened")
+    //   "issue"       → issueDate ("Date Issued")
+    //   undefined     → issueDate with applicationDate fallback (legacy default)
+    const dateField =
+      filters.dateBasis === "application"
+        ? (permit.applicationDate ?? "")
+        : filters.dateBasis === "issue"
+          ? (permit.issueDate ?? "")
+          : (permit.issueDate || permit.applicationDate || "");
 
     if (filters.dateFrom && dateField < filters.dateFrom) {
       return false;
@@ -43,6 +50,7 @@ export function filterPermits(
       return false;
     }
 
+    // General search: address + displayAddress + useOfBuilding + permitTypeDescription
     if (filters.search) {
       const haystack = [
         permit.address,
@@ -55,6 +63,14 @@ export function filterPermits(
         .toLowerCase();
 
       if (!haystack.includes(filters.search.toLowerCase())) {
+        return false;
+      }
+    }
+
+    // Targeted "Use of Building" filter
+    if (filters.useOfBuilding) {
+      const uob = (permit.useOfBuilding ?? "").toLowerCase();
+      if (!uob.includes(filters.useOfBuilding.toLowerCase())) {
         return false;
       }
     }

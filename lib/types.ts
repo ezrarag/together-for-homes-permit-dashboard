@@ -109,9 +109,19 @@ export interface PermitFilters {
   projectCategory?: PermitProjectCategory | "all";
   status?: string;
   zipCode?: string;
+  /**
+   * Which date field the dateFrom/dateTo range is applied against.
+   * "application" → "Date Opened" (applicationDate)
+   * "issue"       → "Date Issued"  (issueDate)
+   * undefined     → issueDate with applicationDate fallback (legacy default)
+   */
+  dateBasis?: "application" | "issue";
   dateFrom?: string;
   dateTo?: string;
+  /** General full-text search: address + useOfBuilding + permitTypeDescription */
   search?: string;
+  /** Targeted filter on the "Use of Building" field specifically */
+  useOfBuilding?: string;
 }
 
 // ── Per-request filtered summary (returned by /api/permits) ──────────────────

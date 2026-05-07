@@ -69,11 +69,15 @@ export default function PermitTable({
       const params = new URLSearchParams({ export: "csv" });
       if (currentFilters.type && currentFilters.type !== "all")
         params.set("type", currentFilters.type);
+      if (currentFilters.projectCategory && currentFilters.projectCategory !== "all")
+        params.set("projectCategory", currentFilters.projectCategory);
       if (currentFilters.status) params.set("status", currentFilters.status);
       if (currentFilters.zipCode) params.set("zipCode", currentFilters.zipCode);
+      if (currentFilters.dateBasis) params.set("dateBasis", currentFilters.dateBasis);
       if (currentFilters.dateFrom) params.set("dateFrom", currentFilters.dateFrom);
       if (currentFilters.dateTo) params.set("dateTo", currentFilters.dateTo);
       if (currentFilters.search) params.set("search", currentFilters.search);
+      if (currentFilters.useOfBuilding) params.set("useOfBuilding", currentFilters.useOfBuilding);
 
       const res = await fetch(`/api/permits?${params}`);
       if (!res.ok) throw new Error("Export failed");

@@ -21,26 +21,19 @@ function csvCell(value: string | number | undefined): string {
 }
 
 function permitsToCsv(permits: Permit[]): string {
+  // Canonical 11-column export — matches the Packet-3 spec exactly.
   const header = [
-    // Legacy field names (preserved for backward compatibility)
     "id",
     "address",
     "zipCode",
-    "type",
-    "status",
+    "projectCategory",
+    "permitTypeDescription",
     "rawStatus",
-    "openedDate",
-    "issuedDate",
-    "constructionTotalCost",
-    "useOfBuilding",
-    "dwellingUnitsImpact",
-    // Packet-1 canonical field names
     "applicationDate",
     "issueDate",
-    "permitTypeDescription",
     "valuation",
-    "projectCategory",
-    "lifecycleStage",
+    "useOfBuilding",
+    "dwellingUnitsImpact",
   ];
 
   const rows = permits.map((permit) =>
@@ -48,21 +41,14 @@ function permitsToCsv(permits: Permit[]): string {
       permit.id,
       permit.address,
       permit.zipCode,
-      permit.permitType,
-      permit.status,
+      permit.projectCategory,
+      permit.permitTypeDescription,
       permit.rawStatus,
-      permit.openedDate,
-      permit.issuedDate,
-      permit.value,
-      permit.useOfBuilding,
-      permit.dwellingUnitsImpact,
-      // Packet-1 canonical fields
       permit.applicationDate,
       permit.issueDate,
-      permit.permitTypeDescription,
       permit.valuation,
-      permit.projectCategory,
-      permit.lifecycleStage,
+      permit.useOfBuilding,
+      permit.dwellingUnitsImpact,
     ]
       .map(csvCell)
       .join(","),
@@ -95,9 +81,11 @@ export async function GET(req: NextRequest) {
     projectCategory: searchParams.get("projectCategory") ?? undefined,
     status: searchParams.get("status") ?? undefined,
     zipCode: searchParams.get("zipCode") ?? undefined,
+    dateBasis: searchParams.get("dateBasis") ?? undefined,
     dateFrom: searchParams.get("dateFrom") ?? undefined,
     dateTo: searchParams.get("dateTo") ?? undefined,
     search: searchParams.get("search") ?? undefined,
+    useOfBuilding: searchParams.get("useOfBuilding") ?? undefined,
   };
 
   // Strip undefined and "all" sentinel values
