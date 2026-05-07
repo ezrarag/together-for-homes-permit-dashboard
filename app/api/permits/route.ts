@@ -1,10 +1,16 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
 import { PERMIT_API_MAX_PAGE_SIZE, PERMIT_PAGE_SIZE } from "@/lib/permit-config";
-import { filterPermits } from "@/lib/permits";
+import {
+  computeFilteredSummary,
+  computeMonthlyData,
+  filterPermits,
+} from "@/lib/permits";
 import type { Permit, PermitFilters } from "@/lib/types";
 
 export const revalidate = 60 * 60 * 12;
+
+// ── CSV helpers ───────────────────────────────────────────────────────────────
 
 function csvCell(value: string | number | undefined): string {
   const text = value === undefined ? "" : String(value);
@@ -16,6 +22,7 @@ function csvCell(value: string | number | undefined): string {
 
 function permitsToCsv(permits: Permit[]): string {
   const header = [
+    // Legacy field names (preserved for backward compatibility)
     "id",
     "address",
     "zipCode",
@@ -27,6 +34,13 @@ function permitsToCsv(permits: Permit[]): string {
     "constructionTotalCost",
     "useOfBuilding",
     "dwellingUnitsImpact",
+    // Packet-1 canonical field names
+    "applicationDate",
+    "issueDate",
+    "permitTypeDescription",
+    "valuation",
+    "projectCategory",
+    "lifecycleStage",
   ];
 
   const rows = permits.map((permit) =>
@@ -42,6 +56,13 @@ function permitsToCsv(permits: Permit[]): string {
       permit.value,
       permit.useOfBuilding,
       permit.dwellingUnitsImpact,
+      // Packet-1 canonical fields
+      permit.applicationDate,
+      permit.issueDate,
+      permit.permitTypeDescription,
+      permit.valuation,
+      permit.projectCategory,
+      permit.lifecycleStage,
     ]
       .map(csvCell)
       .join(","),
@@ -50,10 +71,14 @@ function permitsToCsv(permits: Permit[]): string {
   return [header.join(","), ...rows].join("\n");
 }
 
+// ── Utility ───────────────────────────────────────────────────────────────────
+
 function positiveInt(value: string | null, fallback: number): number {
   const parsed = Number(value);
   return Number.isFinite(parsed) && parsed > 0 ? Math.floor(parsed) : fallback;
 }
+
+// ── Route handler ─────────────────────────────────────────────────────────────
 
 export async function GET(req: NextRequest) {
   const { searchParams } = req.nextUrl;
@@ -67,6 +92,7 @@ export async function GET(req: NextRequest) {
 
   const raw = {
     type: searchParams.get("type") ?? undefined,
+    projectCategory: searchParams.get("projectCategory") ?? undefined,
     status: searchParams.get("status") ?? undefined,
     zipCode: searchParams.get("zipCode") ?? undefined,
     dateFrom: searchParams.get("dateFrom") ?? undefined,
@@ -74,7 +100,7 @@ export async function GET(req: NextRequest) {
     search: searchParams.get("search") ?? undefined,
   };
 
-  // Strip undefined and "all" sentinel from type
+  // Strip undefined and "all" sentinel values
   const filters: PermitFilters = Object.fromEntries(
     Object.entries(raw).filter(([, v]) => v !== undefined && v !== "all"),
   );
@@ -84,6 +110,7 @@ export async function GET(req: NextRequest) {
     const filtered = filterPermits(allPermits, filters);
     const total = filtered.length;
 
+    // ── CSV export (returns full filtered set, no pagination) ──────────────
     if (exportMode === "csv") {
       return new NextResponse(permitsToCsv(filtered), {
         headers: {
@@ -94,6 +121,7 @@ export async function GET(req: NextRequest) {
       });
     }
 
+    // ── JSON response: paginated permits + filtered summary + monthly series ─
     const pageCount = Math.max(1, Math.ceil(total / limit));
     const currentPage = Math.min(page, pageCount);
     const permits = filtered.slice(
@@ -101,8 +129,12 @@ export async function GET(req: NextRequest) {
       currentPage * limit,
     );
 
+    // Compute metrics from the full filtered set (not just the current page)
+    const summary = computeFilteredSummary(filtered);
+    const monthlyData = computeMonthlyData(filtered);
+
     return NextResponse.json(
-      { permits, total, page: currentPage, pageCount },
+      { permits, total, page: currentPage, pageCount, summary, monthlyData },
       {
         headers: {
           "Cache-Control": `public, s-maxage=${60 * 60 * 12}, stale-while-revalidate`,

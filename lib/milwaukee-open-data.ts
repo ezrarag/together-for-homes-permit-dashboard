@@ -3,6 +3,8 @@ import type {
   DwellingImpactBreakdown,
   MonthlyDataPoint,
   Permit,
+  PermitLifecycleStage,
+  PermitProjectCategory,
   PermitStatus,
   PermitSummary,
   PermitType,
@@ -65,6 +67,87 @@ export interface FetchPermitsResult {
 
 // ── Normalization helpers ────────────────────────────────────────────────────
 
+/**
+ * Classify a permit into a housing-production project category.
+ * Inspects "Use of Building" first (more specific), then falls back to
+ * the raw "Permit Type" string.
+ */
+function normalizeProjectCategory(
+  useOfBuilding?: string,
+  permitTypeRaw?: string,
+): PermitProjectCategory {
+  const use = (useOfBuilding ?? "").toLowerCase().trim();
+  const raw = (permitTypeRaw ?? "").toLowerCase().trim();
+  const combined = `${use} ${raw}`;
+
+  // ── Single-family / duplex (1–2 units) ───────────────────────────────────
+  if (
+    combined.includes("single family") ||
+    combined.includes("1-2 family") ||
+    combined.includes("1 family") ||
+    combined.includes("2 family") ||
+    combined.includes("two family") ||
+    combined.includes("duplex") ||
+    combined.includes("sfr") ||
+    combined.includes("sfd") ||
+    /\bone[\s-]family/.test(combined) ||
+    /\btwo[\s-]family/.test(combined)
+  ) {
+    return "residential_single_duplex";
+  }
+
+  // ── Multi-family (3+ units) ───────────────────────────────────────────────
+  if (
+    combined.includes("multifamily") ||
+    combined.includes("multi-family") ||
+    combined.includes("multi family") ||
+    combined.includes("apartment") ||
+    combined.includes("3 family") ||
+    combined.includes("4 family") ||
+    combined.includes("5 family") ||
+    combined.includes("condo") ||
+    combined.includes("townhome") ||
+    combined.includes("townhouse") ||
+    /\b[3-9]\d*[\s-]family/.test(combined)
+  ) {
+    return "multi_family";
+  }
+
+  // ── Commercial / industrial ───────────────────────────────────────────────
+  if (
+    combined.includes("commercial") ||
+    combined.includes("office") ||
+    combined.includes("retail") ||
+    combined.includes("industrial") ||
+    combined.includes("warehouse") ||
+    combined.includes("store") ||
+    combined.includes("restaurant") ||
+    combined.includes("business") ||
+    combined.includes("mercantile") ||
+    combined.includes("assembly") ||
+    combined.includes("institutional")
+  ) {
+    return "commercial";
+  }
+
+  return "other";
+}
+
+/**
+ * Determine the lifecycle stage a permit has reached.
+ * "completed_unavailable" represents the CO/completion stage that is NOT
+ * tracked in the current CKAN source — it is a UI label, never derived from data.
+ */
+function determineLifecycleStage(
+  applicationDate?: string,
+  issueDate?: string,
+): PermitLifecycleStage {
+  if (issueDate) return "permit_issued";
+  if (applicationDate) return "application_received";
+  // Edge case: record present but both dates absent
+  return "application_received";
+}
+
 /** Maps raw "Permit Type" values (case-insensitive substring match) to internal slugs. */
 function normalizePermitType(value?: string): PermitType {
   const normalized = value?.toLowerCase().trim() ?? "";
@@ -120,21 +203,43 @@ function normalizeRecord(record: CkanRecord): Permit {
   const rawAddress = record["Address"]?.trim() || "Address unavailable";
   const dwelling = record["Dwelling units impact"]?.trim?.() || undefined;
   const rawPermitType = record["Permit Type"]?.trim() || undefined;
+  const useOfBuilding = record["Use of Building"]?.trim() || undefined;
+
+  // Canonical date fields (packet-1 names)
+  const applicationDate = toIsoDate(record["Date Opened"]);
+  const issueDate = toIsoDate(record["Date Issued"]);
+  const valuation = toNumber(record["Construction Total Cost"]);
 
   return {
     id: record["Record ID"]?.trim() || String(record._id ?? crypto.randomUUID()),
     address: rawAddress,
     displayAddress: parseDisplayAddress(rawAddress),
     zipCode: parseZipCode(rawAddress),
+
     permitType: normalizePermitType(rawPermitType),
+    // Packet-1 canonical name + legacy alias
+    permitTypeDescription: rawPermitType,
     permitTypeRaw: rawPermitType,
+
     status: normalizePermitStatus(rawStatus),
     rawStatus,
-    openedDate: toIsoDate(record["Date Opened"]),
-    issuedDate: toIsoDate(record["Date Issued"]) ?? "",
-    value: toNumber(record["Construction Total Cost"]),
-    useOfBuilding: record["Use of Building"]?.trim() || undefined,
+
+    // Packet-1 canonical names + legacy aliases
+    applicationDate,
+    openedDate: applicationDate,
+    issuedDate: issueDate ?? "",
+    issueDate: issueDate ?? undefined,
+
+    // Packet-1 canonical name + legacy alias
+    valuation,
+    value: valuation,
+
+    useOfBuilding,
     dwellingUnitsImpact: dwelling,
+
+    // Computed classification fields
+    projectCategory: normalizeProjectCategory(useOfBuilding, rawPermitType),
+    lifecycleStage: determineLifecycleStage(applicationDate, issueDate ?? undefined),
   };
 }
 
