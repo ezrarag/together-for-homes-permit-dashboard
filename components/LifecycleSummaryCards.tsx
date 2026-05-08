@@ -1,6 +1,13 @@
 "use client";
 
+import {
+  CheckCircle2,
+  Clock,
+  FileText,
+  TrendingUp,
+} from "lucide-react";
 import type { LifecycleMetrics } from "@/lib/lifecycle-metrics";
+import type { PermitFilters } from "@/lib/types";
 
 function formatCurrency(value: number): string {
   if (value >= 1_000_000_000) return `$${(value / 1_000_000_000).toFixed(1)}B`;
@@ -9,22 +16,50 @@ function formatCurrency(value: number): string {
   return `$${value.toFixed(0)}`;
 }
 
+// ── KPI card ──────────────────────────────────────────────────────────────────
+
 interface KpiCardProps {
   label: string;
   value: string;
   sub?: string;
-  accent: string;    // Tailwind bg class
-  featured?: boolean; // makes the card larger + bolder (Avg Days)
+  accent: string;          // Tailwind bg class for accent bar
+  icon: React.ReactNode;
+  featured?: boolean;      // larger card + gold ring (Avg Days)
+  clickable?: boolean;
+  onClick?: () => void;
 }
 
-function KpiCard({ label, value, sub, accent, featured }: KpiCardProps) {
+function KpiCard({
+  label,
+  value,
+  sub,
+  accent,
+  icon,
+  featured,
+  clickable,
+  onClick,
+}: KpiCardProps) {
+  const Tag = clickable ? "button" : "div";
   return (
-    <div
-      className={`rounded-xl border border-gray-200 bg-white shadow-sm ${
-        featured ? "p-5 ring-2 ring-tfh-gold/40" : "p-4"
-      }`}
+    <Tag
+      {...(clickable
+        ? {
+            type: "button" as const,
+            onClick,
+            className: `group flex w-full flex-col rounded-xl border border-gray-200 bg-white shadow-sm transition-all duration-150 hover:border-tfh-blue hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-tfh-blue ${
+              featured ? "p-5 ring-2 ring-tfh-gold/40" : "p-4"
+            }`,
+          }
+        : {
+            className: `flex flex-col rounded-xl border border-gray-200 bg-white shadow-sm ${
+              featured ? "p-5 ring-2 ring-tfh-gold/40" : "p-4"
+            }`,
+          })}
     >
-      <div className={`mb-2 h-1 w-8 rounded-full ${accent}`} />
+      <div className="flex items-start justify-between">
+        <div className={`mb-2 h-1 w-8 rounded-full ${accent}`} />
+        <span className="text-gray-400">{icon}</span>
+      </div>
       <p className="text-xs font-semibold uppercase tracking-wide text-gray-500">
         {label}
       </p>
@@ -35,17 +70,22 @@ function KpiCard({ label, value, sub, accent, featured }: KpiCardProps) {
       >
         {value}
       </p>
-      {sub && (
-        <p className="mt-1 text-xs text-gray-400">{sub}</p>
+      {sub && <p className="mt-1 text-xs text-gray-400">{sub}</p>}
+      {clickable && (
+        <p className="mt-2 text-xs font-semibold text-tfh-blue opacity-0 transition-opacity duration-150 group-hover:opacity-100">
+          View records →
+        </p>
       )}
-    </div>
+    </Tag>
   );
 }
+
+// ── Status pill ───────────────────────────────────────────────────────────────
 
 interface StatusPillProps {
   label: string;
   count: number;
-  color: string; // Tailwind bg class
+  color: string;
   note?: string;
 }
 
@@ -60,11 +100,22 @@ function StatusPill({ label, count, color, note }: StatusPillProps) {
   );
 }
 
+// ── Main component ────────────────────────────────────────────────────────────
+
 interface LifecycleSummaryCardsProps {
   metrics: LifecycleMetrics;
+  /**
+   * Called when a clickable KPI card is activated.
+   * Receives the filter set to apply and navigates to the Records section.
+   * Pass undefined to disable all click behaviour (embed / read-only mode).
+   */
+  onKpiClick?: (filter: Partial<PermitFilters>) => void;
 }
 
-export default function LifecycleSummaryCards({ metrics }: LifecycleSummaryCardsProps) {
+export default function LifecycleSummaryCards({
+  metrics,
+  onKpiClick,
+}: LifecycleSummaryCardsProps) {
   const avgLabel =
     metrics.averageDaysToIssue !== null
       ? `${metrics.averageDaysToIssue} days`
@@ -79,31 +130,49 @@ export default function LifecycleSummaryCards({ metrics }: LifecycleSummaryCards
     <div className="space-y-3">
       {/* ── 4 KPI metric cards ── */}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        {/* Applications Received */}
         <KpiCard
           label="Applications Received"
           value={metrics.applicationsReceived.toLocaleString()}
           sub="Source: Date Opened"
           accent="bg-tfh-blue"
+          icon={<FileText className="h-4 w-4" />}
+          clickable={!!onKpiClick}
+          onClick={() => onKpiClick?.({})}
         />
+
+        {/* Permits Issued */}
         <KpiCard
           label="Permits Issued"
           value={metrics.permitsIssued.toLocaleString()}
           sub="Source: Date Issued"
           accent="bg-tfh-blue-btn"
+          icon={<CheckCircle2 className="h-4 w-4" />}
+          clickable={!!onKpiClick}
+          onClick={() => onKpiClick?.({})}
         />
-        {/* Avg Days — featured card, prominently displayed for advocacy */}
+
+        {/* Avg Days to Issue — featured card */}
         <KpiCard
           label="Avg Days to Issue"
           value={avgLabel}
           sub={medianSub}
           accent="bg-tfh-gold"
+          icon={<Clock className="h-4 w-4" />}
           featured
+          clickable={!!onKpiClick}
+          onClick={() => onKpiClick?.({})}
         />
+
+        {/* Units Approved — filters to dwellingImpact=added */}
         <KpiCard
           label="Units Approved"
           value={metrics.unitsApproved.toLocaleString()}
           sub="Dwelling units impact: Added/Gained"
           accent="bg-green-400"
+          icon={<TrendingUp className="h-4 w-4" />}
+          clickable={!!onKpiClick}
+          onClick={() => onKpiClick?.({ dwellingImpact: "added" })}
         />
       </div>
 

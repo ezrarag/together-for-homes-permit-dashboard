@@ -1,5 +1,6 @@
 "use client";
 
+import { BarChart2, Building2, HardHat, Home, TableProperties } from "lucide-react";
 import type {
   PermitProjectCategory,
   PermitSummary,
@@ -29,7 +30,7 @@ interface CardConfig {
   subtitle: string;
   accentColor: string;
   bgColor: string;
-  icon: string;
+  icon: React.ReactNode;
 }
 
 const CARD_CONFIGS: CardConfig[] = [
@@ -40,7 +41,7 @@ const CARD_CONFIGS: CardConfig[] = [
     subtitle: "Single-family & duplex (1–2 unit)",
     accentColor: "#019cf2",
     bgColor: "#019cf208",
-    icon: "🏠",
+    icon: <Home className="h-5 w-5" style={{ color: "#019cf2" }} />,
   },
   {
     section: "multi_family",
@@ -49,7 +50,7 @@ const CARD_CONFIGS: CardConfig[] = [
     subtitle: "Apartments, condos & 3+ unit buildings",
     accentColor: "#f0a41a",
     bgColor: "#f0a41a08",
-    icon: "🏢",
+    icon: <Building2 className="h-5 w-5" style={{ color: "#f0a41a" }} />,
   },
   {
     section: "commercial",
@@ -58,7 +59,7 @@ const CARD_CONFIGS: CardConfig[] = [
     subtitle: "Commercial, office, retail & industrial",
     accentColor: "#00304c",
     bgColor: "#00304c08",
-    icon: "🏗️",
+    icon: <HardHat className="h-5 w-5" style={{ color: "#00304c" }} />,
   },
   {
     section: "units",
@@ -67,7 +68,7 @@ const CARD_CONFIGS: CardConfig[] = [
     subtitle: "Net change in dwelling units citywide",
     accentColor: "#10b981",
     bgColor: "#10b98108",
-    icon: "📊",
+    icon: <BarChart2 className="h-5 w-5" style={{ color: "#10b981" }} />,
   },
   {
     section: "records",
@@ -76,7 +77,7 @@ const CARD_CONFIGS: CardConfig[] = [
     subtitle: "Full database with search, filter & export",
     accentColor: "#6b7280",
     bgColor: "#6b728008",
-    icon: "📋",
+    icon: <TableProperties className="h-5 w-5" style={{ color: "#6b7280" }} />,
   },
 ];
 
@@ -169,7 +170,7 @@ function HubCard({
       {/* Icon + arrow row */}
       <div className="flex items-start justify-between">
         <div
-          className="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
+          className="flex h-10 w-10 items-center justify-center rounded-lg"
           style={{ backgroundColor: config.bgColor }}
         >
           {config.icon}

@@ -202,6 +202,7 @@ export default function DashboardClient({
         if (nextFilters.dateTo) params.set("dateTo", nextFilters.dateTo);
         if (nextFilters.search) params.set("search", nextFilters.search);
         if (nextFilters.useOfBuilding) params.set("useOfBuilding", nextFilters.useOfBuilding);
+        if (nextFilters.dwellingImpact) params.set("dwellingImpact", nextFilters.dwellingImpact);
 
         const res = await fetch(`/api/permits?${params}`);
         if (!res.ok) throw new Error(`API error ${res.status}`);
@@ -229,6 +230,18 @@ export default function DashboardClient({
     const target = Math.max(1, Math.min(pageCount, next));
     setPage(target);
     fetchPage(filters, target);
+  }
+
+  /**
+   * Called when a lifecycle KPI card is clicked.
+   * Merges the provided filter slice into the current filter set,
+   * then navigates to the All Records section.
+   */
+  function handleKpiClick(filterSlice: Partial<PermitFilters>) {
+    const merged = { ...filters, ...filterSlice };
+    setFilters(merged);
+    setPage(1);
+    setSection("records");
   }
 
   const isSectionView = SECTION_KEYS.has(section);
@@ -331,7 +344,7 @@ export default function DashboardClient({
                 </div>
 
                 {/* ── 4 advocacy KPI cards (avg days featured) ── */}
-                <LifecycleSummaryCards metrics={lifecycle} />
+                <LifecycleSummaryCards metrics={lifecycle} onKpiClick={handleKpiClick} />
 
                 {/* ── Permit volume by category (Bend-style bar chart) ── */}
                 <PermitBarChart metrics={lifecycle} />

@@ -93,6 +93,7 @@ export async function GET(req: NextRequest) {
     dateTo: searchParams.get("dateTo") ?? undefined,
     search: searchParams.get("search") ?? undefined,
     useOfBuilding: searchParams.get("useOfBuilding") ?? undefined,
+    dwellingImpact: searchParams.get("dwellingImpact") ?? undefined,
   };
 
   // Strip undefined and "all" sentinel values

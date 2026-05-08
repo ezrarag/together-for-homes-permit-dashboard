@@ -125,6 +125,12 @@ export interface PermitFilters {
   search?: string;
   /** Targeted filter on the "Use of Building" field specifically */
   useOfBuilding?: string;
+  /**
+   * Filter by dwelling-units impact direction.
+   * "added" → "Dwelling units impact" includes "Added or Gained"
+   * "lost"  → "Dwelling units impact" includes "Lost or Eliminated"
+   */
+  dwellingImpact?: "added" | "lost";
 }
 
 // ── Per-request filtered summary (returned by /api/permits) ──────────────────

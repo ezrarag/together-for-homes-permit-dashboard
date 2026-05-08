@@ -75,6 +75,16 @@ export function filterPermits(
       }
     }
 
+    // Dwelling-units impact direction filter
+    if (filters.dwellingImpact) {
+      const dwelling = (permit.dwellingUnitsImpact ?? "").toLowerCase();
+      if (filters.dwellingImpact === "added") {
+        if (!dwelling.includes("added") && !dwelling.includes("gained")) return false;
+      } else if (filters.dwellingImpact === "lost") {
+        if (!dwelling.includes("lost") && !dwelling.includes("eliminated")) return false;
+      }
+    }
+
     return true;
   });
 }

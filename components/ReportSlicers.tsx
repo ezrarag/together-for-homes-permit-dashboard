@@ -1,6 +1,8 @@
 "use client";
 
+import { MapPin } from "lucide-react";
 import { useState, type ChangeEvent } from "react";
+import { DISTRICT_ENRICHMENT_AVAILABLE } from "@/lib/district-enrichment";
 import type { PermitFilters, PermitProjectCategory } from "@/lib/types";
 
 // ── Project-category options ──────────────────────────────────────────────────
@@ -211,6 +213,23 @@ export default function ReportSlicers({
             className={inputCls}
           />
         </label>
+
+        {/* Council District — disabled until geocoding pipeline is implemented */}
+        {!DISTRICT_ENRICHMENT_AVAILABLE && (
+          <div className="flex flex-col gap-1 self-end">
+            <span className={`${labelCls} flex items-center gap-1`}>
+              <MapPin className="h-3 w-3" />
+              Council District
+            </span>
+            <div
+              className="flex cursor-not-allowed items-center gap-1.5 rounded-lg border border-dashed border-gray-300 bg-gray-50 px-3 py-1.5 text-xs text-gray-400"
+              title="District filtering requires geocoding permit addresses — not yet available in the current CKAN data source. See lib/district-enrichment.ts for the implementation roadmap."
+            >
+              <MapPin className="h-3 w-3 shrink-0" />
+              Not yet available
+            </div>
+          </div>
+        )}
 
         {/* Status — show dropdown only when source has >1 distinct value */}
         {statusOptions.length > 1 ? (
