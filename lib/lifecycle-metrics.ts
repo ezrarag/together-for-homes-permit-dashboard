@@ -110,7 +110,8 @@ export function categorizeLifecycleStatus(permit: Permit): LifecycleStatus {
 
 /**
  * Filter permits to those with at least one date field inside the time window.
- * Uses applicationDate first, falls back to issueDate.
+ * A permit belongs in the window when either submission or issuance happened
+ * during the period.
  */
 export function filterToTimeWindow(permits: Permit[], window: TimeWindow): Permit[] {
   const now = new Date();
@@ -121,8 +122,9 @@ export function filterToTimeWindow(permits: Permit[], window: TimeWindow): Permi
 
   const cutoffStr = cutoff.toISOString().slice(0, 10);
   return permits.filter((p) => {
-    const dateField = p.applicationDate || p.issueDate || "";
-    return dateField >= cutoffStr;
+    const applicationInWindow = p.applicationDate ? p.applicationDate >= cutoffStr : false;
+    const issuedInWindow = p.issueDate ? p.issueDate >= cutoffStr : false;
+    return applicationInWindow || issuedInWindow;
   });
 }
 

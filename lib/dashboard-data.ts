@@ -1,4 +1,4 @@
-import { computeLifecycleMetrics } from "@/lib/lifecycle-metrics";
+import { computeLifecycleMetrics, filterToTimeWindow } from "@/lib/lifecycle-metrics";
 import type { LifecycleMetrics } from "@/lib/lifecycle-metrics";
 import { computeSummary, fetchMilwaukeePermits } from "@/lib/milwaukee-open-data";
 import { PERMIT_PAGE_SIZE } from "@/lib/permit-config";
@@ -43,9 +43,10 @@ const ERROR_STATUS = (message: string): DataStatus => ({
 export async function loadDashboardData(): Promise<DashboardData> {
   try {
     const { permits: allPermits, dataStatus } = await fetchMilwaukeePermits();
+    const initialLifecyclePermits = filterToTimeWindow(allPermits, "12m");
     return {
       summary: computeSummary(allPermits),
-      initialLifecycle: computeLifecycleMetrics(allPermits),
+      initialLifecycle: computeLifecycleMetrics(initialLifecyclePermits),
       initialPermits: allPermits.slice(0, PERMIT_PAGE_SIZE),
       initialTotal: allPermits.length,
       initialDataStatus: dataStatus,
