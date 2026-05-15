@@ -36,12 +36,12 @@ const CATEGORY_CONFIG: Record<
   { label: string; shortLabel: string }
 > = {
   residential_single_duplex: {
-    label: "Residential New Construction / Alteration",
-    shortLabel: "Residential",
+    label: "1-2 Unit Residential New Construction / Alteration",
+    shortLabel: "1-2 Unit",
   },
   multi_family: {
-    label: "Multi-Family (3+ Units)",
-    shortLabel: "Multi-Family",
+    label: "3+ Unit Residential / Multi-Family",
+    shortLabel: "3+ Unit",
   },
   commercial: {
     label: "Commercial New Construction / Alteration",
@@ -96,7 +96,7 @@ export default function PermitBarChart({ metrics }: PermitBarChartProps) {
             Permit Volume by Category
           </h3>
           <p className="mt-0.5 text-xs text-gray-400">
-            Applications received vs. permits issued · source: Permit Type + Use of Building
+            Records with Date Opened vs. permits issued · source: Permit Type + Use of Building
           </p>
         </div>
       </div>
@@ -124,7 +124,7 @@ export default function PermitBarChart({ metrics }: PermitBarChartProps) {
           <Tooltip
             contentStyle={TOOLTIP_STYLE}
             formatter={(v: unknown, name: unknown) => {
-              const displayName = name === "applications" ? "Applications" : "Issued";
+              const displayName = name === "applications" ? "Records with Date Opened" : "Issued";
               return [(v as number).toLocaleString(), displayName];
             }}
             labelFormatter={(_label: unknown, payload: ReadonlyArray<{ payload?: { fullLabel?: string } }>) => {
@@ -135,7 +135,7 @@ export default function PermitBarChart({ metrics }: PermitBarChartProps) {
             iconType="square"
             iconSize={10}
             wrapperStyle={{ fontSize: 11, paddingTop: 8 }}
-            formatter={(v: string) => (v === "applications" ? "Applications Received" : "Permits Issued")}
+            formatter={(v: string) => (v === "applications" ? "Records Opened" : "Permits Issued")}
           />
 
           {/* Applications bar — lighter fill */}

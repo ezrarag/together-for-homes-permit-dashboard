@@ -60,7 +60,7 @@ function ChartCard({
 
 // ── Chart components ──────────────────────────────────────────────────────────
 
-/** Chart 1: Applications Received (bar, keyed by applicationDate month) */
+/** Chart 1: records with Date Opened (bar, keyed by applicationDate month) */
 function ApplicationsChart({
   data,
   accentColor,
@@ -70,7 +70,7 @@ function ApplicationsChart({
 }) {
   return (
     <ChartCard
-      title="Applications Received"
+      title="Records with Date Opened"
       subtitle="Monthly count — source field: Date Opened"
     >
       <ResponsiveContainer width="100%" height={200}>

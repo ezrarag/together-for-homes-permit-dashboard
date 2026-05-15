@@ -26,42 +26,49 @@ export default function StatBar({ summary, compact = false }: StatBarProps) {
       value: summary.totalPermits.toLocaleString(),
       key: "total",
       accent: "bg-tfh-blue",
+      description: "Total records returned by the Milwaukee CKAN Building Permits dataset.",
     },
     {
       label: "Issued",
       value: summary.issuedCount.toLocaleString(),
       key: "issued",
       accent: "bg-tfh-blue-btn",
+      description: "Records with a Date Issued value in the CKAN archive.",
     },
     {
       label: "Residential",
       value: summary.residentialCount.toLocaleString(),
       key: "residential",
       accent: "bg-tfh-gold",
+      description: "Records categorized from Use of Building and Permit Type.",
     },
     {
       label: "Commercial",
       value: summary.commercialCount.toLocaleString(),
       key: "commercial",
       accent: "bg-tfh-gold-dk",
+      description: "Records categorized from Use of Building and Permit Type.",
     },
     {
       label: "Permits Adding Units",
       value: summary.addedGainedUnits.toLocaleString(),
       key: "adding",
       accent: "bg-tfh-blue",
+      description: "Permit records whose Dwelling units impact flag is Added or Gained.",
     },
     {
       label: "Permits Losing Units",
       value: summary.lostEliminatedUnits.toLocaleString(),
       key: "losing",
       accent: "bg-red-400",
+      description: "Permit records whose Dwelling units impact flag is Lost or Eliminated.",
     },
     {
       label: "Avg Value",
       value: formatCurrency(summary.averageValue),
       key: "avg",
       accent: "bg-tfh-gold",
+      description: "Average Construction Total Cost for records with a value.",
     },
   ];
 
@@ -86,6 +93,8 @@ export default function StatBar({ summary, compact = false }: StatBarProps) {
         <div
           key={stat.label}
           className={`rounded-xl border border-gray-200 bg-white shadow-sm ${cardPad}`}
+          title={stat.description}
+          aria-label={`${stat.label}: ${stat.value}. ${stat.description}`}
         >
           {/* Colored accent stripe */}
           <div className={`mb-2 h-1 w-8 rounded-full ${stat.accent}`} />
@@ -93,6 +102,11 @@ export default function StatBar({ summary, compact = false }: StatBarProps) {
             {stat.label}
           </p>
           <p className={valueCls}>{stat.value}</p>
+          {!compact && (
+            <p className="mt-1 text-[10px] leading-snug text-gray-400">
+              {stat.description}
+            </p>
+          )}
         </div>
       ))}
     </section>

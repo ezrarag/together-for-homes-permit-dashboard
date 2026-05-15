@@ -213,7 +213,7 @@ function PermitsByUseChart({ data }: { data: UseOfBuildingBreakdown[] }) {
   );
 }
 
-// ── Chart 4: Dwelling Units Impact ───────────────────────────────────────────
+// ── Chart 4: dwelling-unit impact flag counts ────────────────────────────────
 
 const DWELLING_COLORS: [string, string, string] = [AXIS_COLOR, BLUE, "#ef4444"];
 
@@ -228,8 +228,8 @@ function DwellingImpactChart({ data }: { data: DwellingImpactBreakdown }) {
 
   return (
     <ChartCard
-      title="Dwelling Units Impact"
-      subtitle={`Source field: Dwelling units impact — ${total.toLocaleString()} permits with data`}
+      title="Permit Unit-Impact Flags"
+      subtitle={`Source field: Dwelling units impact - ${total.toLocaleString()} permits with data`}
     >
       {total === 0 ? (
         <div className="flex h-[220px] items-center justify-center text-sm text-gray-400">

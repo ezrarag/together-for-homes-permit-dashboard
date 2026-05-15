@@ -247,6 +247,8 @@ export interface DataStatus {
   source: string;
   resourceId: string;
   sourceLastModified?: string;
+  latestApplicationDate?: string;
+  latestIssueDate?: string;
   appLastChecked: string;
   totalRecords: number;
   loadedRecords: number;

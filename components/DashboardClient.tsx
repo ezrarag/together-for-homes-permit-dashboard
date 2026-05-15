@@ -94,15 +94,26 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { section: "hub", label: "Lifecycle Hub", shortLabel: "Hub", accentColor: "#00304c" },
-  { section: "residential", label: "Residential", shortLabel: "Residential", accentColor: "#019cf2" },
-  { section: "multi_family", label: "Multi-Family", shortLabel: "Multi-Fam", accentColor: "#f0a41a" },
+  { section: "hub", label: "Permit Timing", shortLabel: "Timing", accentColor: "#00304c" },
+  { section: "residential", label: "1-2 Unit Residential", shortLabel: "1-2 Unit", accentColor: "#019cf2" },
+  { section: "multi_family", label: "3+ Unit Residential", shortLabel: "3+ Unit", accentColor: "#f0a41a" },
   { section: "commercial", label: "Commercial", shortLabel: "Commercial", accentColor: "#00304c" },
-  { section: "units", label: "Units Impact", shortLabel: "Units", accentColor: "#10b981" },
+  { section: "units", label: "Permit Unit Flags", shortLabel: "Unit Flags", accentColor: "#10b981" },
   { section: "records", label: "All Records", shortLabel: "Records", accentColor: "#6b7280" },
 ];
 
 const SECTION_KEYS = new Set<ReportSection>(["residential", "multi_family", "commercial", "units"]);
+
+function formatDateOnly(value?: string) {
+  if (!value) return "unavailable";
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -176,10 +187,12 @@ export default function DashboardClient({
   }, []);
 
   useEffect(() => {
-    // "12m" is the initial server-rendered default — no refetch needed
-    if (timeWindow === "12m") return;
+    if (timeWindow === "12m") {
+      setLifecycle(initialLifecycle);
+      return;
+    }
     fetchLifecycle(timeWindow);
-  }, [timeWindow, fetchLifecycle]);
+  }, [timeWindow, fetchLifecycle, initialLifecycle]);
 
   // ── Fetch paginated records (Records section) ─────────────────────────────
 
@@ -241,6 +254,10 @@ export default function DashboardClient({
       : timeWindow === "90"
         ? "Last 90 Days"
         : "Last 12 Months";
+  const noCkanRecordsInWindow =
+    lifecycle.applicationsReceived === 0 && lifecycle.permitsIssued === 0;
+  const latestIssueDate = formatDateOnly(initialDataStatus.latestIssueDate);
+  const latestApplicationDate = formatDateOnly(initialDataStatus.latestApplicationDate);
 
   return (
     <main className="min-h-screen font-sans">
@@ -256,8 +273,8 @@ export default function DashboardClient({
                 Milwaukee Permit Dashboard
               </h1>
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-tfh-navy/75">
-                Permit lifecycle tracking — application-to-issuance timing,
-                housing production metrics, and advocacy analytics.
+                Issued-permit archive analysis — application-to-issuance timing,
+                housing production proxies, and advocacy reporting.
               </p>
             </div>
             {section === "records" && (
@@ -313,14 +330,15 @@ export default function DashboardClient({
             ════════════════════════════════════════════════════════════ */}
             {section === "hub" && (
               <>
-                {/* ── Lifecycle analytics header ── */}
+                {/* ── Permit timing analytics header ── */}
                 <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
                   <div>
                     <h2 className="text-xs font-bold uppercase tracking-widest text-tfh-navy">
-                      Permit Lifecycle Analytics
+                      Issued Permit Timing
                     </h2>
                     <p className="mt-0.5 text-xs text-gray-500">
-                      Application-to-issuance timing · {windowLabel}
+                      CKAN archive records · {windowLabel} · latest opened{" "}
+                      {latestApplicationDate} · latest issued {latestIssueDate}
                     </p>
                   </div>
                   <TimeWindowToggle
@@ -332,6 +350,15 @@ export default function DashboardClient({
 
                 {/* ── 4 advocacy KPI cards (avg days featured) ── */}
                 <LifecycleSummaryCards metrics={lifecycle} />
+
+                {noCkanRecordsInWindow && (
+                  <div className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm leading-relaxed text-amber-900">
+                    <span className="font-semibold">No CKAN archive records in {windowLabel}.</span>{" "}
+                    The latest CKAN Date Opened is {latestApplicationDate}, and the latest Date
+                    Issued is {latestIssueDate}. Live LMS/Accela integration is required for
+                    current applications, pending-client, in-review, fee-due, or denied statuses.
+                  </div>
+                )}
 
                 {/* ── Permit volume by category (Bend-style bar chart) ── */}
                 <PermitBarChart metrics={lifecycle} />

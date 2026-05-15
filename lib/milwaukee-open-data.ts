@@ -184,6 +184,14 @@ function toNumber(value?: string | number | null): number | undefined {
   return Number.isFinite(parsed) && parsed !== 0 ? parsed : undefined;
 }
 
+function maxIsoDate(values: Array<string | undefined>): string | undefined {
+  return values.reduce<string | undefined>((latest, value) => {
+    if (!value) return latest;
+    if (!latest || value > latest) return value;
+    return latest;
+  }, undefined);
+}
+
 const ZIP_REGEX = /\b(\d{5})(\d{4})?\b\s*$/;
 
 function parseZipCode(address?: string): string | undefined {
@@ -501,6 +509,8 @@ export async function fetchMilwaukeePermits(): Promise<FetchPermitsResult> {
   }
 
   const permits = records.map(normalizeRecord);
+  const latestApplicationDate = maxIsoDate(permits.map((permit) => permit.applicationDate));
+  const latestIssueDate = maxIsoDate(permits.map((permit) => permit.issueDate));
 
   return {
     permits,
@@ -508,6 +518,8 @@ export async function fetchMilwaukeePermits(): Promise<FetchPermitsResult> {
       source: SOURCE_NAME,
       resourceId: RESOURCE_ID,
       sourceLastModified,
+      latestApplicationDate,
+      latestIssueDate,
       appLastChecked,
       totalRecords: total,
       loadedRecords: permits.length,

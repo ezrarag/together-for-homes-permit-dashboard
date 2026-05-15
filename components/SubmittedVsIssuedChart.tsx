@@ -46,7 +46,7 @@ export default function SubmittedVsIssuedChart({ data }: SubmittedVsIssuedChartP
         Submitted vs. Issued
       </h3>
       <p className="mt-0.5 text-xs text-gray-400">
-        Monthly applications (Date Opened) vs. permits issued (Date Issued)
+        Monthly CKAN Date Opened records vs. permits issued (Date Issued)
       </p>
       <div className="mt-3">
         <ResponsiveContainer width="100%" height={200}>
@@ -74,7 +74,7 @@ export default function SubmittedVsIssuedChart({ data }: SubmittedVsIssuedChartP
               contentStyle={TOOLTIP_STYLE}
               formatter={(v: unknown, name: unknown) => [
                 (v as number).toLocaleString(),
-                name === "applications" ? "Applications" : "Issued",
+                name === "applications" ? "Records Opened" : "Issued",
               ]}
             />
             <Legend
@@ -82,7 +82,7 @@ export default function SubmittedVsIssuedChart({ data }: SubmittedVsIssuedChartP
               iconSize={8}
               wrapperStyle={{ fontSize: 11 }}
               formatter={(v: string) =>
-                v === "applications" ? "Applications Received" : "Permits Issued"
+                v === "applications" ? "Records Opened" : "Permits Issued"
               }
             />
             <Bar

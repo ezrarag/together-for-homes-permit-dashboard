@@ -1,5 +1,14 @@
 "use client";
 
+import {
+  ArrowRight,
+  Building2,
+  ClipboardList,
+  HardHat,
+  Home,
+  Layers3,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import type {
   PermitProjectCategory,
   PermitSummary,
@@ -29,27 +38,27 @@ interface CardConfig {
   subtitle: string;
   accentColor: string;
   bgColor: string;
-  icon: string;
+  icon: LucideIcon;
 }
 
 const CARD_CONFIGS: CardConfig[] = [
   {
     section: "residential",
     category: "residential_single_duplex",
-    title: "Residential Building Applications",
-    subtitle: "Single-family & duplex (1–2 unit)",
+    title: "1-2 Unit Residential Permits",
+    subtitle: "Single-family and duplex records",
     accentColor: "#019cf2",
     bgColor: "#019cf208",
-    icon: "🏠",
+    icon: Home,
   },
   {
     section: "multi_family",
     category: "multi_family",
-    title: "Multi-Family Building Applications",
-    subtitle: "Apartments, condos & 3+ unit buildings",
+    title: "3+ Unit Residential Permits",
+    subtitle: "Apartments, condos, and other 3+ unit records",
     accentColor: "#f0a41a",
     bgColor: "#f0a41a08",
-    icon: "🏢",
+    icon: Building2,
   },
   {
     section: "commercial",
@@ -58,16 +67,16 @@ const CARD_CONFIGS: CardConfig[] = [
     subtitle: "Commercial, office, retail & industrial",
     accentColor: "#00304c",
     bgColor: "#00304c08",
-    icon: "🏗️",
+    icon: HardHat,
   },
   {
     section: "units",
     category: null,
-    title: "Housing Production / Units Impact",
-    subtitle: "Net change in dwelling units citywide",
+    title: "Permit Unit-Impact Flags",
+    subtitle: "Permit records flagged added, lost, or maintained",
     accentColor: "#10b981",
     bgColor: "#10b98108",
-    icon: "📊",
+    icon: Layers3,
   },
   {
     section: "records",
@@ -76,7 +85,7 @@ const CARD_CONFIGS: CardConfig[] = [
     subtitle: "Full database with search, filter & export",
     accentColor: "#6b7280",
     bgColor: "#6b728008",
-    icon: "📋",
+    icon: ClipboardList,
   },
 ];
 
@@ -90,16 +99,16 @@ function getBullets(
   if (config.section === "residential" || config.section === "multi_family") {
     if (!breakdown) return [];
     return [
-      { label: "Applications", value: fmt(breakdown.count) },
+      { label: "Records with Date Opened", value: fmt(breakdown.count) },
       { label: "Permits Issued", value: fmt(breakdown.permitsIssued) },
-      { label: "Units Added", value: fmt(breakdown.unitsAdded) },
+      { label: "Permits Marked Added", value: fmt(breakdown.unitsAdded) },
     ];
   }
 
   if (config.section === "commercial") {
     if (!breakdown) return [];
     return [
-      { label: "Applications", value: fmt(breakdown.count) },
+      { label: "Records with Date Opened", value: fmt(breakdown.count) },
       { label: "Permits Issued", value: fmt(breakdown.permitsIssued) },
       { label: "Total Valuation", value: fmtCurrency(breakdown.totalValuation) },
     ];
@@ -107,8 +116,8 @@ function getBullets(
 
   if (config.section === "units") {
     return [
-      { label: "Units Added or Gained", value: fmt(summary.addedGainedUnits) },
-      { label: "Units Lost or Eliminated", value: fmt(summary.lostEliminatedUnits) },
+      { label: "Permits Marked Added/Gained", value: fmt(summary.addedGainedUnits) },
+      { label: "Permits Marked Lost/Eliminated", value: fmt(summary.lostEliminatedUnits) },
       {
         label: "Permits with Impact Data",
         value: fmt(
@@ -128,24 +137,6 @@ function getBullets(
   ];
 }
 
-// ── Arrow icon ────────────────────────────────────────────────────────────────
-
-function ArrowRight({ color }: { color: string }) {
-  return (
-    <svg
-      className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke={color}
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M3 8h10M9 4l4 4-4 4" />
-    </svg>
-  );
-}
-
 // ── Single hub card ───────────────────────────────────────────────────────────
 
 function HubCard({
@@ -160,6 +151,7 @@ function HubCard({
   onNavigate: (s: ReportSection) => void;
 }) {
   const bullets = getBullets(config, breakdown, summary);
+  const Icon = config.icon;
 
   return (
     <button
@@ -172,13 +164,17 @@ function HubCard({
           className="flex h-10 w-10 items-center justify-center rounded-lg text-xl"
           style={{ backgroundColor: config.bgColor }}
         >
-          {config.icon}
+          <Icon className="h-5 w-5" color={config.accentColor} aria-hidden="true" />
         </div>
         <div
           className="flex h-7 w-7 items-center justify-center rounded-full opacity-0 transition-opacity duration-150 group-hover:opacity-100"
           style={{ backgroundColor: `${config.accentColor}18` }}
         >
-          <ArrowRight color={config.accentColor} />
+          <ArrowRight
+            className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
+            color={config.accentColor}
+            aria-hidden="true"
+          />
         </div>
       </div>
 
@@ -214,7 +210,11 @@ function HubCard({
         style={{ color: config.accentColor }}
       >
         <span>View report</span>
-        <ArrowRight color={config.accentColor} />
+        <ArrowRight
+          className="h-3.5 w-3.5 transition-transform duration-150 group-hover:translate-x-0.5"
+          color={config.accentColor}
+          aria-hidden="true"
+        />
       </div>
     </button>
   );

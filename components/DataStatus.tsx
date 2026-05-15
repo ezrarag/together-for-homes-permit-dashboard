@@ -19,6 +19,17 @@ function formatDateTime(value?: string) {
   });
 }
 
+function formatDateOnly(value?: string) {
+  if (!value) return null;
+  const [year, month, day] = value.split("-").map(Number);
+  if (!year || !month || !day) return value;
+  return new Date(year, month - 1, day).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
 export default function DataStatusBanner({ status }: DataStatusProps) {
   if (!status) return null;
 
@@ -32,6 +43,8 @@ export default function DataStatusBanner({ status }: DataStatusProps) {
 
   const sourceLastModified = formatDateTime(status.sourceLastModified);
   const appLastChecked = formatDateTime(status.appLastChecked);
+  const latestApplicationDate = formatDateOnly(status.latestApplicationDate);
+  const latestIssueDate = formatDateOnly(status.latestIssueDate);
   const fullyLoaded = status.loadedRecords >= status.totalRecords;
 
   return (
@@ -54,6 +67,18 @@ export default function DataStatusBanner({ status }: DataStatusProps) {
         <span>
           <span className="font-semibold text-tfh-navy">Generated:</span>
           &nbsp;{appLastChecked}
+        </span>
+      ) : null}
+      {latestApplicationDate ? (
+        <span>
+          <span className="font-semibold text-tfh-navy">Latest Date Opened:</span>
+          &nbsp;{latestApplicationDate}
+        </span>
+      ) : null}
+      {latestIssueDate ? (
+        <span>
+          <span className="font-semibold text-tfh-navy">Latest Date Issued:</span>
+          &nbsp;{latestIssueDate}
         </span>
       ) : null}
       <span>

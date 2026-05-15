@@ -48,9 +48,9 @@ const SECTION_CONFIGS: Record<SectionKey, SectionConfig> = {
     accentColor: "#00304c",
   },
   units: {
-    label: "Housing Production / Units Impact",
+    label: "Permit Unit-Impact Flags",
     description:
-      'Net change in Milwaukee\'s housing supply. Counts permits where "Dwelling units impact" indicates units added, lost, or maintained.',
+      'Permit-count proxy for housing impact. Counts records where "Dwelling units impact" indicates added, lost, or maintained; it does not count numeric housing units.',
     category: null,
     accentColor: "#10b981",
   },
@@ -98,7 +98,7 @@ function LifecycleCard({
         </span>
         {isUnavailable && (
           <span className="ml-auto flex-shrink-0 rounded bg-amber-100 px-1.5 py-0.5 text-xs font-medium text-amber-700">
-            ⚠ Not in CKAN
+            Not in CKAN
           </span>
         )}
       </div>
@@ -196,12 +196,12 @@ export default function SectionView({ section }: SectionViewProps) {
       {/* ── Lifecycle KPI cards ──────────────────────────────────────────── */}
       <div>
         <h3 className="mb-3 text-xs font-bold uppercase tracking-widest text-gray-400">
-          Lifecycle Overview
+          CKAN Archive Overview
         </h3>
         <div className="grid gap-4 sm:grid-cols-3">
           <LifecycleCard
             stage="application"
-            label="Applications Received"
+            label="Records with Date Opened"
             value={summary ? summary.applicationsReceived.toLocaleString() : "—"}
             note="Source: Date Opened"
             accentColor={config.accentColor}
